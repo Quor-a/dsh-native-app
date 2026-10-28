@@ -1,8 +1,11 @@
 package com.dshnative.app.plugins
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,11 +14,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.InstallDesktop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,12 +38,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** 插件管理页（对应 DSH dsh-plugin-manager） */
+/** 插件管理页（对应 DSH dsh-plugin-manager / dsh-client-ui-plugin-market） */
 @Composable
 fun PluginsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val registry = remember { PluginRegistry(context) }
     var plugins by remember { mutableStateOf(registry.all()) }
+    var filter by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -62,21 +68,29 @@ fun PluginsScreen(onBack: () -> Unit) {
                     modifier = Modifier.width(20.dp).height(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("插件", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "插件架构 · 一切能力皆插件",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text("插件", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text("一切能力皆插件", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+
+        // 分类过滤（全部/工具/功能/界面/系统）
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item { FilterChip("全部", filter == null) { filter = null } }
+            PluginCategory.entries.forEach { cat ->
+                item { FilterChip(cat.label, filter == cat.name) { filter = cat.name } }
             }
         }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 16.dp)
         ) {
-            items(plugins, key = { it.id }) { p ->
+            items(plugins.filter { filter == null || it.category.name == filter }, key = { it.id }) { p ->
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(14.dp),
@@ -90,10 +104,16 @@ fun PluginsScreen(onBack: () -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(p.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(Modifier.width(6.dp))
+                                Text(p.category.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                Spacer(Modifier.width(6.dp))
                                 Text("v${p.version}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 if (p.builtin) {
                                     Spacer(Modifier.width(6.dp))
                                     Text("内置", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                                if (p.optional) {
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("可安装", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary)
                                 }
                             }
                             Spacer(Modifier.height(4.dp))
@@ -106,10 +126,19 @@ fun PluginsScreen(onBack: () -> Unit) {
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
+                            if (p.dependencies.isNotEmpty()) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "依赖: ${p.dependencies.joinToString(", ")}",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                         Spacer(Modifier.width(10.dp))
                         Switch(
                             checked = p.enabled,
+                            enabled = p.category != PluginCategory.SYSTEM,
                             onCheckedChange = { checked ->
                                 registry.setEnabled(p.id, checked)
                                 plugins = registry.all()
@@ -119,5 +148,31 @@ fun PluginsScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                else MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(999.dp)
+            )
+            .border(
+                1.dp,
+                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                RoundedCornerShape(999.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (label == "可安装") {
+            Icon(Icons.Filled.InstallDesktop, null, Modifier.width(12.dp).height(12.dp), tint = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.width(4.dp))
+        }
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }

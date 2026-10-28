@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -214,6 +215,57 @@ class ToolRegistry(private val context: Context) {
                 })
                 put("required", JsonArray(listOf(JsonPrimitive("command"))))
             }
+        ),
+        toolDef(
+            "todo_write",
+            "记录并更新任务列表（整个列表替换，last-write-wins）：每次调用传入完整的任务列表，覆盖之前的列表。参数：todos 数组，每项 {content(任务内容), status(pending/in_progress/completed)}。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("todos", buildJsonObject {
+                        put("type", "array")
+                        put("description", "完整任务列表")
+                        put("items", buildJsonObject {
+                            put("type", "object")
+                            put("properties", buildJsonObject {
+                                put("content", buildJsonObject { put("type", "string"); put("description", "任务内容") })
+                                put("status", buildJsonObject { put("type", "string"); put("enum", JsonArray(listOf(JsonPrimitive("pending"), JsonPrimitive("in_progress"), JsonPrimitive("completed")))) })
+                            })
+                            put("required", JsonArray(listOf(JsonPrimitive("content"))))
+                        })
+                    })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("todos"))))
+            }
+        ),
+        toolDef(
+            "jobs_run",
+            "在后台执行一个 shell 命令（Termux 环境），立即返回 job_id。之后用 jobs_result 查询输出。参数：command。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("command", buildJsonObject {
+                        put("type", "string")
+                        put("description", "要在后台执行的 shell 命令")
+                    })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("command"))))
+            }
+        ),
+        toolDef(
+            "jobs_list",
+            "列出所有后台任务的 job_id、命令前缀与状态（running/finished）。"
+        ),
+        toolDef(
+            "jobs_result",
+            "查询后台任务输出。参数：job_id。任务完成后返回 exit/stdout/stderr；未完成返回 status=running。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("job_id", buildJsonObject { put("type", "string"); put("description", "jobs_run 返回的任务 id") })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("job_id"))))
+            }
         )
     )
 
@@ -253,6 +305,10 @@ class ToolRegistry(private val context: Context) {
             "android_browser_open" -> browserOpen(args)
             "android_system_info" -> systemInfo()
             "android_terminal_exec" -> terminalExec(args)
+            "todo_write" -> todoWrite(args)
+            "jobs_run" -> jobsRun(args)
+            "jobs_list" -> jobsList()
+            "jobs_result" -> jobsResult(args)
             else -> """{"error":"unknown tool $name"}"""
         }
     }
@@ -441,6 +497,79 @@ class ToolRegistry(private val context: Context) {
         val cmd = args["command"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 command"}"""
         com.dshnative.app.termux.TermuxManager.init(context)
         return com.dshnative.app.termux.TermuxManager.exec(cmd)
+    }
+
+    // ---------- tool-todo（todo_write，整个列表替换，last-write-wins） ----------
+
+    private val todoPrefs by lazy { context.getSharedPreferences("dshnative_todos", Context.MODE_PRIVATE) }
+
+    private fun todoWrite(args: JsonObject): String {
+        val raw = args["todos"] ?: return """{"error":"缺少 todos 参数"}"""
+        return try {
+            val list = raw.jsonArray.map { item ->
+                val obj = item.jsonObject
+                val content = obj["content"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                val status = obj["status"]?.jsonPrimitive?.contentOrNull ?: "pending"
+                if (content.isEmpty()) throw IllegalArgumentException("todo content 不能为空")
+                """{"content":${JsonPrimitive(content)},"status":${JsonPrimitive(status)}}"""
+            }
+            todoPrefs.edit().putString("todos", "[${list.joinToString(",")}]").apply()
+            """{"ok":true,"todos":[${list.joinToString(",")}],"count":${list.size}}"""
+        } catch (e: Exception) {
+            """{"error":"todo 写入失败: ${e.message}"}"""
+        }
+    }
+
+    // ---------- tool-jobs（后台任务） ----------
+
+    private data class JobState(
+        val command: String,
+        var status: String = "running", // running / finished
+        var exit: Int = -1,
+        var stdout: String = "",
+        var stderr: String = ""
+    )
+
+    private val jobs = java.util.concurrent.ConcurrentHashMap<String, JobState>()
+
+    private fun jobsRun(args: JsonObject): String {
+        val cmd = args["command"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 command"}"""
+        val id = java.util.UUID.randomUUID().toString().take(8)
+        jobs[id] = JobState(command = cmd)
+        com.dshnative.app.termux.TermuxManager.init(context)
+        Thread {
+            try {
+                val result = com.dshnative.app.termux.TermuxManager.exec(cmd)
+                val parsed = try {
+                    kotlinx.serialization.json.Json.parseToJsonElement(result).jsonObject
+                } catch (_: Exception) { null }
+                val state = jobs[id]
+                if (state != null) {
+                    state.exit = parsed?.get("exit")?.jsonPrimitive?.intOrNull ?: -1
+                    state.stdout = parsed?.get("stdout")?.jsonPrimitive?.contentOrNull ?: result
+                    state.stderr = parsed?.get("stderr")?.jsonPrimitive?.contentOrNull ?: ""
+                    state.status = "finished"
+                }
+            } catch (e: Exception) {
+                val state = jobs[id]
+                if (state != null) { state.stderr = e.message ?: "error"; state.status = "finished" }
+            }
+        }.start()
+        return """{"ok":true,"job_id":"$id","command":${JsonPrimitive(cmd.take(120))}}"""
+    }
+
+    private fun jobsList(): String {
+        val items = jobs.map { (id, s) ->
+            """{"job_id":"$id","status":${JsonPrimitive(s.status)},"command":${JsonPrimitive(s.command.take(100))}}"""
+        }
+        return """{"count":${items.size},"jobs":[${items.joinToString(",")}]}"""
+    }
+
+    private fun jobsResult(args: JsonObject): String {
+        val id = args["job_id"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 job_id"}"""
+        val s = jobs[id] ?: return """{"error":"未知 job_id: $id"}"""
+        if (s.status == "running") return """{"job_id":"$id","status":"running"}"""
+        return """{"job_id":"$id","status":"finished","exit":${s.exit},"stdout":${JsonPrimitive(s.stdout.take(8000))},"stderr":${JsonPrimitive(s.stderr.take(2000))}}"""
     }
 
     private fun IntentBattery(): Int {
