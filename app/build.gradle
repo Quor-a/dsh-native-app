@@ -34,8 +34,8 @@ android {
         compose true
     }
     aaptOptions {
-        // Termux bootstrap 已是 tar 格式，不要二次压缩（48MB 直接进 APK）
-        noCompress += "tar"
+        // Termux bootstrap 是 gzip 压缩的 tar（.gz），不要二次压缩
+        noCompress += "gz"
     }
 }
 

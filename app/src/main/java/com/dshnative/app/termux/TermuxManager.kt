@@ -5,15 +5,16 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPInputStream
 
 /**
  * 内置 Termux 终端环境管理。
- * bootstrap 打包在 assets/termux-bootstrap.tar（data/data/com.termux/files/usr 结构），
+ * bootstrap 打包在 assets/termux-bootstrap.tar.gz（gzip 压缩的 tar，data/data/com.termux/files/usr 结构），
  * 首次运行解压到 filesDir，通过 proot 模拟 root 运行 bash，无需 root/Shizuku。
  */
 object TermuxManager {
 
-    private const val ASSET = "termux-bootstrap.tar"
+    private const val ASSET = "termux-bootstrap.tar.gz"
     /** 相对 filesDir 的 Termux 用户态根 */
     const val REL_PREFIX = "data/data/com.termux/files/usr"
 
@@ -26,6 +27,11 @@ object TermuxManager {
 
     @Volatile
     var extracting: Boolean = false
+        private set
+
+    /** 最近一次初始化/解压失败的具体原因（供 UI 展示） */
+    @Volatile
+    var lastError: String? = null
         private set
 
     /** 初始化：必须先从 Application/Activity 调用一次 */
@@ -53,15 +59,39 @@ object TermuxManager {
         if (extracting) return false
         extracting = true
         return try {
-            val tmpTar = File(context.filesDir, "termux-bootstrap-tmp.tar")
-            context.assets.open(ASSET).use { input ->
-                tmpTar.outputStream().use { out -> input.copyTo(out) }
+            val filesDir = context.filesDir
+            val usr = File(filesDir, REL_PREFIX)
+            // 解压前检查可用空间：解压后约 300MB，要求可用 > 500MB
+            val neededMb = 500L
+            val usableMb = filesDir.usableSpace / (1024 * 1024)
+            if (usableMb < neededMb) {
+                lastError = "存储空间不足：解压 Termux 需要约 ${neededMb}MB，当前可用 ${usableMb}MB。请清理后重试。"
+                ready = false
+                false
+            } else {
+                val tmpTar = File(filesDir, "termux-bootstrap-tmp.tar.gz")
+                try {
+                    context.assets.open(ASSET).use { input ->
+                        tmpTar.outputStream().use { out -> input.copyTo(out) }
+                    }
+                    GZIPInputStream(tmpTar.inputStream()).use { gz ->
+                        extractTar(gz, filesDir)
+                    }
+                    tmpTar.delete()
+                    ready = true
+                    lastError = null
+                    true
+                } catch (e: Exception) {
+                    // 解压失败：清理残留，下次重试
+                    try { tmpTar.delete() } catch (_: Exception) {}
+                    try { usr.deleteRecursively() } catch (_: Exception) {}
+                    lastError = "解压失败：${e.message ?: "未知错误"}"
+                    ready = false
+                    false
+                }
             }
-            extractTar(tmpTar.inputStream(), context.filesDir)
-            tmpTar.delete()
-            ready = true
-            true
         } catch (e: Exception) {
+            lastError = "初始化失败：${e.message ?: "未知错误"}"
             ready = false
             false
         } finally {
@@ -76,7 +106,7 @@ object TermuxManager {
     fun exec(command: String, timeoutSeconds: Int = 60): String {
         val ctx = appContext ?: return """{"error":"Termux 未初始化"}"""
         if (!ready && !isExtracted()) {
-            return """{"error":"Termux 尚未解压完成"}"""
+            return """{"error":"Termux 尚未解压完成${lastError?.let { "：$it" } ?: ""}"}"""
         }
         ready = true
         val filesDir = ctx.filesDir
@@ -121,11 +151,12 @@ object TermuxManager {
         }
     }
 
-    // ---------- tar 解压（GNU tar 格式，无第三方依赖） ----------
+    // ---------- tar 解压（GNU tar 格式，支持长文件名扩展头） ----------
 
     private fun extractTar(stream: InputStream, dest: File) {
         val header = ByteArray(512)
         val buf = ByteArray(64 * 1024)
+        var pendingName: String? = null
         while (true) {
             val read = readFully(stream, header)
             if (read < 512) break
@@ -136,11 +167,23 @@ object TermuxManager {
             val typeFlag = header[156].toInt().toChar()
 
             when {
-                typeFlag == '5' || name.endsWith("/") -> {
-                    File(dest, name).mkdirs()
+                // GNU 长文件名扩展头：内容 = 下一个条目的真实路径
+                typeFlag == 'L' -> {
+                    val bytes = ByteArray(size.toInt())
+                    readFully(stream, bytes)
+                    pendingName = String(bytes, Charsets.UTF_8).trimEnd('\u0000')
+                    skipFully(stream, paddingFor(size))
                 }
+                // 目录
+                typeFlag == '5' || name.endsWith("/") -> {
+                    File(dest, pendingName ?: name).mkdirs()
+                    pendingName = null
+                    skipFully(stream, size)
+                    skipFully(stream, paddingFor(size))
+                }
+                // 普通文件（含符号链接等，按内容写入）
                 name.isNotEmpty() -> {
-                    val target = File(dest, name)
+                    val target = File(dest, pendingName ?: name)
                     target.parentFile?.mkdirs()
                     FileOutputStream(target).use { out ->
                         var remaining = size
@@ -151,15 +194,18 @@ object TermuxManager {
                             remaining -= chunk
                         }
                     }
+                    pendingName = null
+                    skipFully(stream, paddingFor(size))
                 }
                 else -> {
                     skipFully(stream, size)
+                    skipFully(stream, paddingFor(size))
                 }
             }
-            val padding = ((512 - (size % 512)) % 512).toLong()
-            skipFully(stream, padding)
         }
     }
+
+    private fun paddingFor(size: Long): Long = ((512 - (size % 512)) % 512).toLong()
 
     private fun readFully(stream: InputStream, buf: ByteArray): Int {
         var off = 0

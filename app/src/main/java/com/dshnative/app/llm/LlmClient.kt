@@ -45,8 +45,7 @@ class LlmClient(
         onDone: (StreamResult) -> Unit,
         onError: (String) -> Unit
     ) {
-        val requestBody = ChatRequest(model, messages, tools, stream = true)
-        val bodyStr = json.encodeToString(ChatRequest.serializer(), requestBody)
+        val bodyStr = buildChatBody(model, messages, tools)
         val request = Request.Builder()
             .url(baseUrl.trimEnd('/') + "/chat/completions")
             .addHeader("Authorization", "Bearer $apiKey")
@@ -138,5 +137,48 @@ class LlmClient(
         withContext(Dispatchers.IO) { latch.await() }
         error?.let { throw RuntimeException(it) }
         return result
+    }
+
+    /** 手动构建请求体：确保 tools 数组每项的 type 严格为 "function"（兼容 OpenRouter/中转等严格校验的 API） */
+    private fun buildChatBody(model: String, messages: List<ApiMessage>, tools: List<ApiToolDef>?): String {
+        val messagesJson = try {
+            json.encodeToString(messages)
+        } catch (_: Exception) {
+            json.encodeToString(kotlinx.serialization.builtins.ListSerializer(ApiMessage.serializer()), messages)
+        }
+        return buildString {
+            append("""{"model":""").append(jsonString(model))
+            append(""","messages":""").append(messagesJson)
+            append(""","stream":true""")
+            if (!tools.isNullOrEmpty()) {
+                append(""","tools":[""")
+                append(tools.joinToString(",") { t ->
+                    append("""{"type":"function","function":{"name":""")
+                    append(jsonString(t.function.name))
+                    append(""","description":""")
+                    append(jsonString(t.function.description))
+                    append(""","parameters":""")
+                    append(t.function.parameters.toString())
+                    append("""}}""")
+                })
+                append("]")
+            }
+            append("}")
+        }
+    }
+
+    private fun jsonString(s: String): String = buildString {
+        append('"')
+        s.forEach { c ->
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> append(c)
+            }
+        }
+        append('"')
     }
 }

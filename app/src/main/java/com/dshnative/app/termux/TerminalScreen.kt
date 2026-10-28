@@ -78,7 +78,7 @@ fun TerminalScreen(onBack: () -> Unit) {
             lines = if (ok) {
                 lines + "Termux 就绪。试试：pwd / ls / echo hello / whoami"
             } else {
-                lines + "Termux 解压失败，请检查存储空间。"
+                lines + "Termux 解压失败：" + (TermuxManager.lastError ?: "请检查存储空间。")
             }
         } else {
             ready = true
