@@ -3,6 +3,7 @@ package com.dshnative.app.ui
 import android.content.Context
 import android.widget.TextView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,12 +16,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -28,7 +34,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -54,7 +60,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -68,6 +77,9 @@ import kotlinx.coroutines.launch
 val LocalMarkwon = staticCompositionLocalOf<Markwon> {
     error("Markwon not provided")
 }
+
+// 内容最大宽度（对应 DSH --dsh-chat-content-width: min(100%-32px, 920px)）
+private val ChatContentMaxWidth = 920.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,37 +97,40 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
-                    ConversationDrawer(
-                        conversations = viewModel.conversations,
-                        currentId = viewModel.currentId,
-                        onSelect = {
-                            viewModel.switchConversation(it)
-                            scope.launch { drawerState.close() }
-                        },
-                        onNew = {
-                            viewModel.newConversation()
-                            scope.launch { drawerState.close() }
-                        },
-                        onDelete = { viewModel.deleteConversation(it) },
-                        onRename = { id, title -> viewModel.renameConversation(id, title) }
-                    )
-                }
+                DshSidebar(
+                    conversations = viewModel.conversations,
+                    currentId = viewModel.currentId,
+                    onSelect = {
+                        viewModel.switchConversation(it)
+                        scope.launch { drawerState.close() }
+                    },
+                    onNew = {
+                        viewModel.newConversation()
+                        scope.launch { drawerState.close() }
+                    },
+                    onDelete = { viewModel.deleteConversation(it) },
+                    onRename = { id, title -> viewModel.renameConversation(id, title) }
+                )
             }
         ) {
-            Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                ChatTopBar(
-                    title = current?.title ?: "DshNative",
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                // 顶部：极简导航条（手机端保留菜单入口）
+                DshTopBar(
+                    title = current?.title ?: "DeepSeek Harness",
                     onMenu = { scope.launch { drawerState.open() } },
                     onNew = { viewModel.newConversation() },
                     onSettings = { showSettings = true }
                 )
-
-                MessageList(viewModel = viewModel, modifier = Modifier.weight(1f))
-
-                ChatInputBar(busy = busy) {
-                    viewModel.send(it)
-                }
+                DshMessageList(viewModel = viewModel)
+                DshComposer(
+                    model = config.model,
+                    busy = busy,
+                    onSend = { viewModel.send(it) }
+                )
             }
         }
     }
@@ -125,35 +140,42 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     }
 }
 
+/** 顶部导航条：菜单 / 会话名 / 新建 / 设置 */
 @Composable
-fun ChatTopBar(title: String, onMenu: () -> Unit, onNew: () -> Unit, onSettings: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onMenu) {
-                Icon(Icons.Filled.Menu, contentDescription = "会话列表", tint = MaterialTheme.colorScheme.onSurface)
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onNew) {
-                Icon(Icons.Filled.Add, contentDescription = "新建会话", tint = MaterialTheme.colorScheme.onSurface)
-            }
-            IconButton(onClick = onSettings) {
-                Icon(Icons.Filled.Settings, contentDescription = "设置", tint = MaterialTheme.colorScheme.onSurface)
-            }
+fun DshTopBar(title: String, onMenu: () -> Unit, onNew: () -> Unit, onSettings: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onMenu) {
+            Icon(Icons.Filled.Menu, contentDescription = "会话列表",
+                tint = MaterialTheme.colorScheme.onBackground)
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onNew) {
+            Icon(Icons.Filled.Add, contentDescription = "新建会话",
+                tint = MaterialTheme.colorScheme.onBackground)
+        }
+        IconButton(onClick = onSettings) {
+            Icon(Icons.Filled.Settings, contentDescription = "设置",
+                tint = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
 
+/** 消息流：助手消息无气泡，用户消息深灰气泡（DSH 风格） */
 @Composable
-fun MessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
+fun DshMessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
     val messages = viewModel.currentConversation?.messages ?: emptyList()
     val listState = rememberLazyListState()
     LaunchedEffect(messages.size) {
@@ -162,55 +184,183 @@ fun MessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     ) {
         if (messages.isEmpty()) {
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 48.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "我是安卓原生 AI 助手\n可以操控手机、执行命令、截图分析",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 15.sp
-                    )
-                }
+                DshEmptyState()
             }
         }
         items(messages) { msg ->
-            ChatBubble(msg)
+            DshMessageBubble(msg)
         }
     }
 }
 
+/** 空会话欢迎页（对应 DSH 的 "探索未至之境" hero） */
 @Composable
-fun ChatInputBar(busy: Boolean, onSend: (String) -> Unit) {
-    var input by remember { mutableStateOf("") }
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                placeholder = { Text("输入消息…", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                modifier = Modifier.weight(1f),
-                maxLines = 6,
-                shape = RoundedCornerShape(16.dp)
+fun DshEmptyState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 72.dp, bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "探索未至之境",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "描述你想要构建的内容, / 调用指令, @ 文件或对话",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun DshMessageBubble(msg: ChatMessage) {
+    val isUser = msg.role == "user"
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .widthIn(max = ChatContentMaxWidth),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        if (isUser) {
+            // 用户消息：深灰气泡，20dp 圆角（DSH Sixlwa_bubble）
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.widthIn(max = 480.dp)
+            ) {
+                Text(
+                    text = msg.content,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else if (msg.content.isEmpty()) {
+            // 助手占位：闪烁光标
+            Text(
+                text = "▍",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyLarge
             )
-            Spacer(Modifier.width(8.dp))
-            Box(contentAlignment = Alignment.Center) {
-                if (busy) {
-                    CircularProgressIndicator(modifier = Modifier.width(28.dp).height(28.dp))
-                } else {
-                    IconButton(
-                        onClick = {
-                            onSend(input)
-                            input = ""
-                        },
-                        enabled = input.isNotBlank()
+        } else {
+            // 助手消息：无气泡（透明背景），Markdown 渲染
+            val markwon = LocalMarkwon.current
+            val contentColor = MaterialTheme.colorScheme.onBackground
+            AndroidView(
+                factory = { ctx ->
+                    TextView(ctx).apply {
+                        setTextSize(16f)
+                        setTextColor(contentColor.toArgb())
+                        setLineSpacing(2f, 1.0f)
+                        setPadding(0, 4, 0, 4)
+                        setTextIsSelectable(true)
+                    }
+                },
+                update = { tv ->
+                    tv.setTextColor(contentColor.toArgb())
+                    markwon.setMarkdown(tv, msg.content)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/** 底部输入卡（DSH composer）：模型标签 + 输入框 + 胶囊发送按钮 */
+@Composable
+fun DshComposer(model: String, busy: Boolean, onSend: (String) -> Unit) {
+    var input by remember { mutableStateOf("") }
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                // 模型标签行（对应 "工作区内修改 u2-flash"）
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(999.dp))
+                            .padding(horizontal = 10.dp, vertical = 3.dp)
                     ) {
-                        Icon(Icons.Filled.Send, contentDescription = "发送", tint = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = model,
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "工作区内修改",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    BasicTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 15.sp
+                        ),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 4.dp),
+                        decorationBox = { inner ->
+                            if (input.isEmpty()) {
+                                Text(
+                                    text = "描述你想要构建的内容…",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    fontSize = 15.sp
+                                )
+                            }
+                            inner()
+                        }
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    if (busy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(34.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.dp
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    if (input.isNotBlank()) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                    CircleShape
+                                )
+                                .clickable(enabled = input.isNotBlank()) {
+                                    onSend(input)
+                                    input = ""
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Filled.Send,
+                                contentDescription = "发送",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -218,52 +368,9 @@ fun ChatInputBar(busy: Boolean, onSend: (String) -> Unit) {
     }
 }
 
+/** 侧栏（DSH sidebar）：品牌 + 新会话按钮 + 工作区列表 + 用户 */
 @Composable
-fun ChatBubble(msg: ChatMessage) {
-    val isUser = msg.role == "user"
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
-    ) {
-        Surface(
-            color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(
-                topStart = 16.dp, topEnd = 16.dp,
-                bottomStart = if (isUser) 16.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 16.dp
-            ),
-            modifier = Modifier.widthIn(max = 340.dp)
-        ) {
-            if (isUser || msg.content.isEmpty()) {
-                Text(
-                    text = msg.content,
-                    color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                val markwon = LocalMarkwon.current
-                AndroidView(
-                    factory = { ctx ->
-                        TextView(ctx).apply {
-                            setTextSize(14f)
-                            setTextColor(android.graphics.Color.parseColor("#E6EDF3"))
-                            setPadding(ctx.dp(12), ctx.dp(8), ctx.dp(12), ctx.dp(8))
-                            setTextIsSelectable(true)
-                        }
-                    },
-                    update = { tv -> markwon.setMarkdown(tv, msg.content) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-}
-
-private fun Context.dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
-
-@Composable
-fun ConversationDrawer(
+fun DshSidebar(
     conversations: List<Conversation>,
     currentId: String,
     onSelect: (String) -> Unit,
@@ -273,44 +380,113 @@ fun ConversationDrawer(
 ) {
     var renameTarget by remember { mutableStateOf<String?>(null) }
     Column(
-        modifier = Modifier.fillMaxHeight().width(300.dp).padding(16.dp)
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(288.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 16.dp)
     ) {
-        Text("会话", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = onNew, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.width(18.dp).height(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("新建会话")
+        // 品牌行：DeepSeek Harness + 预览版 badge
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("鱼", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "DeepSeek Harness",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(999.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text("预览版", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+            }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
+
+        // 新会话按钮（DSH hHd-Xa_newSession：边框 + 12dp 圆角）
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+                .clickable { onNew() }
+                .padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondary, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("新会话", color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+        }
+        Spacer(Modifier.height(14.dp))
+
+        // 工作区节标题
+        Text(
+            text = "工作区",
+            color = MaterialTheme.colorScheme.tertiary,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+        Spacer(Modifier.height(4.dp))
+
+        // 会话列表
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(conversations, key = { it.id }) { conv ->
+                val selected = conv.id == currentId
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelect(conv.id) }
                         .background(
-                            if (conv.id == currentId) MaterialTheme.colorScheme.surfaceVariant
+                            if (selected) MaterialTheme.colorScheme.outlineVariant
                             else Color.Transparent,
-                            RoundedCornerShape(8.dp)
+                            RoundedCornerShape(12.dp)
                         )
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .clickable { onSelect(conv.id) }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = conv.title,
                         color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 14.sp,
                         maxLines = 1,
                         modifier = Modifier.weight(1f).clickable { renameTarget = conv.id }
                     )
                     IconButton(
                         onClick = { onDelete(conv.id) },
-                        modifier = Modifier.width(28.dp).height(28.dp)
+                        modifier = Modifier.size(26.dp)
                     ) {
-                        Icon(Icons.Filled.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(16.dp).height(16.dp))
+                        Icon(Icons.Filled.Delete, contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
             }
+        }
+
+        // 底部用户
+        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("A", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text("agentuser", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
         }
     }
 
@@ -322,23 +498,20 @@ fun ConversationDrawer(
             AlertDialog(
                 onDismissRequest = { renameTarget = null },
                 title = { Text("重命名会话") },
-                text = {
-                    OutlinedTextField(value = title, onValueChange = { title = it }, singleLine = true)
-                },
+                text = { OutlinedTextField(value = title, onValueChange = { title = it }, singleLine = true) },
                 confirmButton = {
                     TextButton(onClick = {
                         onRename(conv.id, title.trim().ifEmpty { "新对话" })
                         renameTarget = null
                     }) { Text("确定") }
                 },
-                dismissButton = {
-                    TextButton(onClick = { renameTarget = null }) { Text("取消") }
-                }
+                dismissButton = { TextButton(onClick = { renameTarget = null }) { Text("取消") } }
             )
         }
     }
 }
 
+/** 设置对话框 */
 @Composable
 fun SettingsDialog(config: AppConfig, onDismiss: () -> Unit) {
     var apiKey by remember { mutableStateOf(config.apiKey) }
@@ -350,27 +523,9 @@ fun SettingsDialog(config: AppConfig, onDismiss: () -> Unit) {
         title = { Text("设置") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = apiKey,
-                    onValueChange = { apiKey = it },
-                    label = { Text("API Key") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = baseUrl,
-                    onValueChange = { baseUrl = it },
-                    label = { Text("Base URL") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = model,
-                    onValueChange = { model = it },
-                    label = { Text("模型") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                OutlinedTextField(value = apiKey, onValueChange = { apiKey = it }, label = { Text("API Key") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = baseUrl, onValueChange = { baseUrl = it }, label = { Text("Base URL") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("模型") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
@@ -381,8 +536,6 @@ fun SettingsDialog(config: AppConfig, onDismiss: () -> Unit) {
                 onDismiss()
             }) { Text("保存") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
     )
 }
