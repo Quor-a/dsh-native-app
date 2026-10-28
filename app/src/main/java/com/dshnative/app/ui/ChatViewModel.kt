@@ -117,13 +117,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     appendAssistant("尚未配置 API Key，请在模型配置中填写。")
                     return@launch
                 }
-                // 模型名为空时用服务商默认模型，避免 API 返回 model is required
-                val model = cfg.model.ifBlank {
-                    try {
+                // 模型名兜底：用户未填或服务商默认模型名为空时，最终用 deepseek-chat，杜绝 model is required
+                val model = cfg.model.trim().ifBlank {
+                    val default = try {
                         ApiProviderConfigs.getDefaultModelName(ApiProviderType.valueOf(cfg.provider))
                     } catch (_: Exception) {
-                        "deepseek-chat"
+                        ""
                     }
+                    default.ifBlank { "deepseek-chat" }
                 }
                 val llm = LlmClient(cfg.baseUrl, cfg.apiKey, model)
                 val engine = AgentEngine(llm, tools)

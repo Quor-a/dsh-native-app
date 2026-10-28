@@ -22,8 +22,10 @@ import java.util.concurrent.TimeUnit
 class LlmClient(
     private val baseUrl: String,
     private val apiKey: String,
-    private val model: String
+    model: String
 ) {
+    /** 最终兜底：模型名绝对不允许为空，否则 OpenAI 兼容 API 返回 HTTP 400 model is required */
+    private val model: String = model.trim().ifBlank { "deepseek-chat" }
     private val json = Json { ignoreUnknownKeys = true }
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
