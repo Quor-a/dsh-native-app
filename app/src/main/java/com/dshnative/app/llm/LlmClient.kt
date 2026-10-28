@@ -48,8 +48,9 @@ class LlmClient(
         onError: (String) -> Unit
     ) {
         val bodyStr = buildChatBody(model, messages, tools)
+        val url = completeEndpoint(baseUrl)
         val request = Request.Builder()
-            .url(baseUrl.trimEnd('/') + "/chat/completions")
+            .url(url)
             .addHeader("Authorization", "Bearer $apiKey")
             .post(bodyStr.toRequestBody("application/json; charset=utf-8".toMediaType()))
             .build()
@@ -182,5 +183,21 @@ class LlmClient(
             }
         }
         append('"')
+    }
+
+    /** 按 zorvAI 逻辑补全 OpenAI 兼容端点：裸 host → /v1/chat/completions；/v1 → /chat/completions。 */
+    private fun completeEndpoint(base: String): String {
+        val withoutSlash = base.trim().trimEnd('/')
+        if (withoutSlash.isEmpty()) return "https://api.openai.com/v1/chat/completions"
+        val idx = withoutSlash.indexOf("://")
+        val rest = if (idx >= 0) withoutSlash.substring(idx + 3) else withoutSlash
+        val slash = rest.indexOf('/')
+        val path = if (slash >= 0) rest.substring(slash) else ""
+        return when {
+            path.isEmpty() -> "$withoutSlash/v1/chat/completions"
+            path.endsWith("/v1", ignoreCase = true) -> "$withoutSlash/chat/completions"
+            path.endsWith("/chat/completions", ignoreCase = true) -> withoutSlash
+            else -> "$withoutSlash/chat/completions"
+        }
     }
 }

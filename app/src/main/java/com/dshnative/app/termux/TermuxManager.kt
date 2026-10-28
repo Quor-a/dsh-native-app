@@ -139,8 +139,17 @@ object TermuxManager {
      */
     fun exec(command: String, timeoutSeconds: Int = 60): String {
         val ctx = appContext ?: return """{"error":"Termux 未初始化"}"""
-        if (!ready && !isExtracted()) {
-            return """{"error":"Termux 尚未解压完成${lastError?.let { "：$it" } ?: ""}"}"""
+        if (!isExtracted()) {
+            // 自动触发（或重试）解压：首次部分失败时再次尝试，避免“每次进入都重新解压却始终损坏”。
+            ensureExtracted(ctx)
+        }
+        if (!isExtracted()) {
+            val missing = buildList {
+                val usr = File(ctx.filesDir, REL_PREFIX)
+                if (!File(usr, "bin/bash").exists()) add("bin/bash")
+                if (!File(usr, "bin/proot").exists()) add("bin/proot")
+            }
+            return """{"error":"Termux bootstrap 损坏：缺失 ${missing.joinToString()}。${lastError?.let { "原因：$it" } ?: "已自动尝试解压，仍失败。"}"}"""
         }
         ready = true
         val filesDir = ctx.filesDir

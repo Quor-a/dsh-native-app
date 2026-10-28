@@ -554,23 +554,21 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                 })
             }
             "settings/update" -> {
-                val request = args["request"]?.jsonObject
-                val value = request?.get("value")?.jsonObject
-                if (value != null) {
-                    val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
-                    val repo = QuroModelConfigRepository(ctx)
-                    val cfg = repo.load()
-                    val provider = value["provider"]?.jsonPrimitive?.contentOrNull ?: cfg.provider
-                    val baseUrl = value["baseUrl"]?.jsonPrimitive?.contentOrNull ?: cfg.baseUrl
-                    val apiKey = value["apiKey"]?.jsonPrimitive?.contentOrNull ?: cfg.apiKey
-                    val model = value["model"]?.jsonPrimitive?.contentOrNull ?: cfg.model
-                    repo.save(cfg.copy(
-                        provider = provider,
-                        baseUrl = baseUrl,
-                        apiKey = apiKey,
-                        model = model.ifBlank { "deepseek-chat" }
-                    ))
-                }
+                val value = resolveValueObject(args)
+                    ?: return@routeRpc errorResult("gateway/arguments-invalid", "missing value")
+                val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
+                val repo = QuroModelConfigRepository(ctx)
+                val cfg = repo.load()
+                val provider = value["provider"]?.jsonPrimitive?.contentOrNull ?: cfg.provider
+                val baseUrl = value["baseUrl"]?.jsonPrimitive?.contentOrNull ?: cfg.baseUrl
+                val apiKey = value["apiKey"]?.jsonPrimitive?.contentOrNull ?: cfg.apiKey
+                val model = value["model"]?.jsonPrimitive?.contentOrNull ?: cfg.model
+                repo.save(cfg.copy(
+                    provider = provider,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    model = model.ifBlank { "deepseek-chat" }
+                ))
                 okResult(null)
             }
             "settings/mutate" -> okResult(null)
@@ -658,8 +656,45 @@ class DshWebServer : NanoWSD(HOST, PORT) {
         return null
     }
 
+    /** 兼容多种前端参数格式，提取配置 value 对象。 */
+    private fun resolveValueObject(args: JsonObject): JsonObject? {
+        args["request"]?.jsonObject?.get("value")?.jsonObject?.let { return it }
+        args["value"]?.jsonObject?.let { return it }
+        val params = args["parameters"]
+        if (params is JsonArray) {
+            for (el in params) {
+                if (el is JsonObject) {
+                    el["value"]?.jsonObject?.let { return it }
+                    if (el.containsKey("provider") || el.containsKey("baseUrl") || el.containsKey("apiKey") || el.containsKey("model")) {
+                        return el
+                    }
+                }
+            }
+        } else if (params is JsonObject) {
+            params["value"]?.jsonObject?.let { return it }
+            return params
+        }
+        return null
+    }
+
+    /** 兼容多种前端参数格式，提取 session/prompt 的 request 对象。 */
+    private fun resolveRequestObject(args: JsonObject): JsonObject? {
+        args["request"]?.jsonObject?.let { return it }
+        val params = args["parameters"]
+        if (params is JsonArray) {
+            for (el in params) {
+                if (el is JsonObject) {
+                    if (el.containsKey("sessionId") || el.containsKey("content")) return el
+                }
+            }
+        } else if (params is JsonObject) {
+            return params
+        }
+        return null
+    }
+
     private fun handlePrompt(args: JsonObject): RpcResult {
-        val request = args["request"]?.jsonObject
+        val request = resolveRequestObject(args)
             ?: return errorResult("gateway/arguments-invalid", "missing request")
         val sessionId = request["sessionId"]?.jsonPrimitive?.contentOrNull
             ?: return errorResult("gateway/arguments-invalid", "missing sessionId")
