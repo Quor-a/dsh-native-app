@@ -2,6 +2,7 @@ package com.dshnative.app.termux
 
 import android.content.Context
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
@@ -217,17 +218,23 @@ object TermuxManager {
                 // 普通文件（含符号链接等，按内容写入）
                 name.isNotEmpty() -> {
                     val target = File(dest, pendingName ?: name)
-                    target.parentFile?.mkdirs()
-                    FileOutputStream(target).use { out ->
-                        var remaining = size
-                        while (remaining > 0) {
-                            val chunk = stream.read(buf, 0, minOf(remaining, buf.size.toLong()).toInt())
-                            if (chunk < 0) break
-                            out.write(buf, 0, chunk)
-                            remaining -= chunk
-                        }
-                    }
                     pendingName = null
+                    try {
+                        target.parentFile?.mkdirs()
+                        FileOutputStream(target).use { out ->
+                            var remaining = size
+                            while (remaining > 0) {
+                                val chunk = stream.read(buf, 0, minOf(remaining, buf.size.toLong()).toInt())
+                                if (chunk < 0) break
+                                out.write(buf, 0, chunk)
+                                remaining -= chunk
+                            }
+                        }
+                    } catch (e: FileNotFoundException) {
+                        // 单个文件写入失败（如特殊设备文件、只读路径）不中断整个解压
+                        lastError = "解压跳过：${target.path}（${e.message}）"
+                        skipFully(stream, size)
+                    }
                     skipFully(stream, paddingFor(size))
                 }
                 else -> {
