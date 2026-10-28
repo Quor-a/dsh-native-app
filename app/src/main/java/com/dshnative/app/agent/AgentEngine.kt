@@ -1,5 +1,6 @@
 package com.dshnative.app.agent
 
+import android.content.Context
 import com.dshnative.app.llm.ApiMessage
 import com.dshnative.app.llm.ApiToolCall
 import com.dshnative.app.llm.LlmClient
@@ -13,13 +14,28 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * Agent 引擎：工具调用循环。
  * 模型请求工具 -> 原生执行 -> 结果回填 -> 继续，直到模型给出最终回复。
+ *
+ * 系统提示词 = 基础骨架 + PluginRegistry.enabledPrompts() 动态拼接。
+ * 即使外部以 [AgentEngine] 两参构造（不显式传插件注册表），
+ * 也会通过应用上下文拿到全局插件注册表，让插件启停实时反映到系统提示词。
  */
 class AgentEngine(
     private val llm: LlmClient,
     private val tools: ToolRegistry,
-    private val plugins: PluginRegistry? = null
+    plugins: PluginRegistry? = null
 ) {
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    /** 插件注册表：优先用外部注入，否则从应用上下文懒加载。 */
+    private val pluginRegistry: PluginRegistry? = plugins ?: appContext()?.let { PluginRegistry(it) }
+
+    /** 通过反射拿到 Application Context（不修改 ChatViewModel 构造方式）。 */
+    private fun appContext(): Context? = try {
+        val clazz = Class.forName("android.app.ActivityThread")
+        clazz.getMethod("currentApplication").invoke(null) as? Context
+    } catch (_: Throwable) {
+        null
+    }
 
     private val baseSystemPrompt = """
         # 角色
@@ -53,7 +69,7 @@ class AgentEngine(
      * 插件启用/停用会实时反映到模型看到的系统提示词。
      */
     private fun buildSystemPrompt(): String {
-        val pluginPrompts = plugins?.enabledPrompts()?.trim() ?: ""
+        val pluginPrompts = pluginRegistry?.enabledPrompts()?.trim() ?: ""
         return if (pluginPrompts.isNotEmpty()) {
             "$baseSystemPrompt\n\n# 已启用的插件能力\n$pluginPrompts"
         } else {

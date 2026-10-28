@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,14 +47,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** 插件管理页（对齐 DSH dsh-plugin-manager / dsh-client-ui-plugin-inventory：已安装 + 市场） */
+/**
+ * 插件管理页（对齐 DSH dsh-plugin-manager / dsh-client-ui-plugin-inventory）。
+ *
+ * 两个 Tab：
+ * - 已安装：当前启用插件（内置 + 已安装的可选插件），可停用 / 打开配置面板；
+ * - 市场：官方 72 个 @deepseek-ai/dsh-* 插件 + 本地可选插件，内置标「已内置」+ 启用开关，
+ *   可选插件标「安装 / 卸载」按钮。
+ */
 @Composable
 fun PluginsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val registry = remember { PluginRegistry(context) }
-    var plugins by remember { mutableStateOf(registry.all()) }
+    var installed by remember { mutableStateOf(registry.all()) }
+    var market by remember { mutableStateOf(registry.marketIndex()) }
     var tab by remember { mutableStateOf(0) } // 0 = 已安装，1 = 市场
     var configTarget by remember { mutableStateOf<DshPlugin?>(null) }
+
+    fun refresh() {
+        installed = registry.all()
+        market = registry.marketIndex()
+    }
 
     Column(
         modifier = Modifier
@@ -119,32 +131,61 @@ fun PluginsScreen(onBack: () -> Unit) {
         }
 
         if (tab == 0) {
-            // 已安装 = 当前启用的插件
-            val installed = plugins.filter { it.enabled }
+            // 已安装 = 启用的内置插件 + 已安装的可选/市场插件
+            val enabledIds = installed.filter { it.enabled }.map { it.id }.toSet()
+            val enabledMarket = market.filter { it.enabled && !it.builtin }
+            val installedList = installed.filter { it.enabled } + enabledMarket.filter { it.id !in enabledIds }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 16.dp)
             ) {
-                items(installed, key = { it.id }) { p -> PluginCard(p, registry, hasConfig = p.configItems.isNotEmpty(), onConfig = { configTarget = p }) }
-                if (installed.isEmpty()) {
+                items(installedList, key = { it.id }) { p ->
+                    PluginCard(
+                        p = p,
+                        hasConfig = p.configItems.isNotEmpty(),
+                        onToggle = { checked ->
+                            registry.setBundleEnabled(p.id, checked)
+                            refresh()
+                        },
+                        onConfig = { configTarget = p }
+                    )
+                }
+                if (installedList.isEmpty()) {
                     item { EmptyHint("还没有启用任何插件，去「市场」安装吧") }
                 }
             }
         } else {
-            // 市场 = 全部插件（内置/可选）
+            // 市场 = 官方 72 插件 + 本地可选插件
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 16.dp)
             ) {
                 item {
                     Text(
-                        "共 ${plugins.size} 个官方插件（对齐 @deepseek-ai/dsh-*）",
+                        "共 ${market.size} 个插件（对齐 @deepseek-ai/dsh-* 官方清单）",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
                     )
                 }
-                items(plugins, key = { it.id }) { p -> MarketCard(p, registry, onConfig = { configTarget = p }) }
+                items(market, key = { it.id }) { p ->
+                    MarketCard(
+                        p = p,
+                        onToggle = { checked ->
+                            registry.setBundleEnabled(p.id, checked)
+                            refresh()
+                        },
+                        onInstall = {
+                            registry.setBundleEnabled(p.id, true)
+                            refresh()
+                        },
+                        onRemove = {
+                            registry.removeBundle(p.id)
+                            refresh()
+                        },
+                        onConfig = { configTarget = p }
+                    )
+                }
             }
         }
     }
@@ -158,6 +199,7 @@ fun PluginsScreen(onBack: () -> Unit) {
             onDismiss = { configTarget = null },
             onSave = { updated ->
                 registry.saveConfig(p.id, updated)
+                refresh()
                 configTarget = null
             }
         )
@@ -167,8 +209,8 @@ fun PluginsScreen(onBack: () -> Unit) {
 @Composable
 private fun PluginCard(
     p: DshPlugin,
-    registry: PluginRegistry,
     hasConfig: Boolean,
+    onToggle: (Boolean) -> Unit,
     onConfig: () -> Unit
 ) {
     Surface(
@@ -187,6 +229,10 @@ private fun PluginCard(
                     Text(p.category.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                     Spacer(Modifier.width(6.dp))
                     Text("v${p.version}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (p.optional) {
+                        Spacer(Modifier.width(6.dp))
+                        Text("可选", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary)
+                    }
                 }
                 if (p.bundleName.isNotBlank() || p.officialId.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
@@ -213,9 +259,7 @@ private fun PluginCard(
             Switch(
                 checked = p.enabled,
                 enabled = p.category != PluginCategory.SYSTEM,
-                onCheckedChange = { checked ->
-                    registry.setEnabled(p.id, checked)
-                }
+                onCheckedChange = onToggle
             )
         }
     }
@@ -224,7 +268,9 @@ private fun PluginCard(
 @Composable
 private fun MarketCard(
     p: DshPlugin,
-    registry: PluginRegistry,
+    onToggle: (Boolean) -> Unit,
+    onInstall: () -> Unit,
+    onRemove: () -> Unit,
     onConfig: () -> Unit
 ) {
     Surface(
@@ -236,7 +282,7 @@ private fun MarketCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(p.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                 if (p.builtin) {
-                    Text("内置", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("已内置", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
                 } else {
                     Text("可安装", fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary)
                 }
@@ -268,15 +314,7 @@ private fun MarketCard(
                 }
                 if (p.optional) {
                     // 可选插件：安装/卸载
-                    TextButton(
-                        onClick = {
-                            if (p.enabled) {
-                                registry.removeBundle(p.bundleName.ifBlank { p.officialId })
-                            } else {
-                                registry.setEnabled(p.id, true)
-                            }
-                        }
-                    ) {
+                    TextButton(onClick = { if (p.enabled) onRemove() else onInstall() }) {
                         if (!p.enabled) {
                             Icon(Icons.Filled.Download, null, Modifier.width(14.dp).height(14.dp))
                             Spacer(Modifier.width(4.dp))
@@ -290,7 +328,7 @@ private fun MarketCard(
                     Switch(
                         checked = p.enabled,
                         enabled = p.category != PluginCategory.SYSTEM,
-                        onCheckedChange = { checked -> registry.setEnabled(p.id, checked) }
+                        onCheckedChange = onToggle
                     )
                 }
             }

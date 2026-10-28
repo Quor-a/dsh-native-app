@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
 
         // 启动本地 DSH Web 协议层服务器（127.0.0.1:8756），供 WebView 加载 Web UI。
         DshWebServer.pluginRegistry = PluginRegistry(applicationContext)
+        DshWebServer.pluginRegistry?.startPlugins()
         dshWebServer.start(applicationContext)
 
         setContent {
