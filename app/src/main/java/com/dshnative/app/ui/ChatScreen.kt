@@ -30,7 +30,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -71,6 +73,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dshnative.app.config.AppConfig
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
+import com.dshnative.app.plugins.PluginsScreen
+import com.dshnative.app.termux.TerminalScreen
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
 
@@ -91,10 +95,17 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val scope = rememberCoroutineScope()
     var showSettings by remember { mutableStateOf(false) }
     var showModelPicker by remember { mutableStateOf(false) }
+    var showPlugins by remember { mutableStateOf(false) }
+    var showTerminal by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
 
-    CompositionLocalProvider(LocalMarkwon provides markwon) {
+    if (showPlugins) {
+        PluginsScreen(onBack = { showPlugins = false })
+    } else if (showTerminal) {
+        TerminalScreen(onBack = { showTerminal = false })
+    } else {
+        CompositionLocalProvider(LocalMarkwon provides markwon) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
@@ -110,7 +121,9 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                         scope.launch { drawerState.close() }
                     },
                     onDelete = { viewModel.deleteConversation(it) },
-                    onRename = { id, title -> viewModel.renameConversation(id, title) }
+                    onRename = { id, title -> viewModel.renameConversation(id, title) },
+                    onPlugins = { showPlugins = true },
+                    onTerminal = { showTerminal = true }
                 )
             }
         ) {
@@ -151,6 +164,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
             },
             onDismiss = { showModelPicker = false }
         )
+    }
     }
 }
 
@@ -404,7 +418,9 @@ fun DshSidebar(
     onSelect: (String) -> Unit,
     onNew: () -> Unit,
     onDelete: (String) -> Unit,
-    onRename: (String, String) -> Unit
+    onRename: (String, String) -> Unit,
+    onPlugins: () -> Unit,
+    onTerminal: () -> Unit
 ) {
     var renameTarget by remember { mutableStateOf<String?>(null) }
     Column(
@@ -459,6 +475,40 @@ fun DshSidebar(
             Text("新会话", color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
         }
         Spacer(Modifier.height(14.dp))
+
+        // 插件入口
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .clickable { onPlugins() }
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("插件", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+            Spacer(Modifier.weight(1f))
+            Text("管理", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+
+        // 终端入口
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .clickable { onTerminal() }
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Terminal, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("终端", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+            Spacer(Modifier.weight(1f))
+            Text("Termux", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(10.dp))
 
         // 工作区节标题
         Text(

@@ -22,10 +22,14 @@ import kotlinx.serialization.json.put
  */
 class ToolRegistry(private val context: Context) {
 
+    private val plugins = com.dshnative.app.plugins.PluginRegistry(context)
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** 工具定义（JSON Schema） */
-    fun definitions(): List<ApiToolDef> = listOf(
+    /** 工具定义（JSON Schema）——只暴露启用插件的工具（插件架构） */
+    fun definitions(): List<ApiToolDef> =
+        allDefinitions().filter { it.function.name in plugins.enabledTools() }
+
+    private fun allDefinitions(): List<ApiToolDef> = listOf(
         toolDef(
             "android_ui_tree",
             "获取当前屏幕的可访问性 UI 树（JSON 格式），包含控件类名/文本/坐标/可点击性。查看屏幕内容时先调用它。"
@@ -196,6 +200,20 @@ class ToolRegistry(private val context: Context) {
         toolDef(
             "android_system_info",
             "获取设备信息：品牌型号、Android 版本、SDK、电池电量、网络类型等。"
+        ),
+        toolDef(
+            "android_terminal_exec",
+            "在手机内置的完整 Termux 终端环境（bash + coreutils + proot，无需 root）中执行任意 shell 命令。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("command", buildJsonObject {
+                        put("type", "string")
+                        put("description", "要执行的 shell 命令")
+                    })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("command"))))
+            }
         )
     )
 
@@ -209,6 +227,9 @@ class ToolRegistry(private val context: Context) {
 
     /** 执行工具，返回 JSON 字符串结果 */
     fun execute(name: String, argumentsJson: String): String {
+        if (name !in plugins.enabledTools()) {
+            return """{"error":"工具 '$name' 所在插件未启用，请先在插件设置中启用"}"""
+        }
         val args = try {
             json.parseToJsonElement(argumentsJson).jsonObject
         } catch (_: Exception) {
@@ -231,6 +252,7 @@ class ToolRegistry(private val context: Context) {
             "android_web_fetch" -> webFetch(args)
             "android_browser_open" -> browserOpen(args)
             "android_system_info" -> systemInfo()
+            "android_terminal_exec" -> terminalExec(args)
             else -> """{"error":"unknown tool $name"}"""
         }
     }
@@ -412,6 +434,13 @@ class ToolRegistry(private val context: Context) {
             put("network", networkType())
         }
         return """{"device":$info}"""
+    }
+
+    /** 内置 Termux 终端执行 */
+    private fun terminalExec(args: JsonObject): String {
+        val cmd = args["command"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 command"}"""
+        com.dshnative.app.termux.TermuxManager.init(context)
+        return com.dshnative.app.termux.TermuxManager.exec(cmd)
     }
 
     private fun IntentBattery(): Int {

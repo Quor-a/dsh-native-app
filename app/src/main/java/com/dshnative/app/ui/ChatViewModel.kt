@@ -16,7 +16,10 @@ import com.dshnative.app.llm.LlmClient
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.tools.ToolRegistry
+import com.dshnative.app.termux.TermuxManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -37,6 +40,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val toolStatus: State<String> = _toolStatus
 
     init {
+        // 后台解压内置 Termux（约 50MB，首次启动后台完成，终端工具立即可用）
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                TermuxManager.init(application)
+                TermuxManager.ensureExtracted(application)
+            }
+        }
+
         val loaded = store.loadAll()
         if (loaded.isEmpty()) {
             val c = Conversation(title = "新对话")
