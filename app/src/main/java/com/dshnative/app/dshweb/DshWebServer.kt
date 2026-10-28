@@ -7,6 +7,7 @@ import com.dshnative.app.llm.LlmClient
 import com.dshnative.app.model.QuroModelConfigRepository
 import com.dshnative.app.plugins.PluginRegistry
 import com.dshnative.app.termux.TermuxManager
+import com.dshnative.app.workspace.WorkspaceManager
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoWSD
 import kotlinx.coroutines.CoroutineScope
@@ -394,14 +395,55 @@ class DshWebServer : NanoWSD(HOST, PORT) {
             "agentPresets/read" -> okResult(JsonNull)
             "agentPresets/select" -> okResult(null)
             "workspace/archiveSession" -> okResult(null)
-            "workspace/list" -> okResult(buildJsonObject {
-                put("items", buildJsonArray { })
-            })
-            "workspace/get" -> okResult(buildJsonObject {
-                put("id", "workspace-" + UUID.randomUUID())
-                put("name", "本地工作区")
-                put("home", HOME_PATH)
-            })
+            "workspace/list" -> {
+                val wm = appContext?.let { WorkspaceManager(it) }
+                okResult(buildJsonObject {
+                    put("items", buildJsonArray {
+                        wm?.listWorkspaces()?.forEach { name ->
+                            add(buildJsonObject {
+                                put("id", name)
+                                put("name", name)
+                                put("home", wm.currentWorkspacePath() ?: "")
+                            })
+                        }
+                    })
+                })
+            }
+            "workspace/get" -> {
+                val wm = appContext?.let { WorkspaceManager(it) }
+                val current = wm?.currentWorkspacePath()
+                okResult(buildJsonObject {
+                    put("id", wm?.listWorkspaces()?.firstOrNull() ?: "workspace-" + UUID.randomUUID())
+                    put("name", wm?.listWorkspaces()?.firstOrNull() ?: "本地工作区")
+                    put("home", current ?: HOME_PATH)
+                })
+            }
+            "workspace/create" -> {
+                val request = args["request"]?.jsonObject
+                val name = request?.get("name")?.jsonPrimitive?.contentOrNull
+                    ?: request?.get("workspaceName")?.jsonPrimitive?.contentOrNull
+                    ?: return@routeRpc errorResult("gateway/arguments-invalid", "missing workspace name")
+                val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
+                val wm = WorkspaceManager(ctx)
+                val created = wm.createWorkspace(name)
+                if (created) wm.selectWorkspace(name)
+                okResult(buildJsonObject {
+                    put("created", created)
+                    put("id", name)
+                    put("name", name)
+                    put("home", wm.currentWorkspacePath() ?: "")
+                })
+            }
+            "workspace/select" -> {
+                val request = args["request"]?.jsonObject
+                val name = request?.get("name")?.jsonPrimitive?.contentOrNull
+                    ?: request?.get("workspaceName")?.jsonPrimitive?.contentOrNull
+                if (name != null) {
+                    val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
+                    WorkspaceManager(ctx).selectWorkspace(name)
+                }
+                okResult(null)
+            }
             "fileUploads/upload" -> okResult(buildJsonObject {
                 put("receiptId", "local-receipt-" + UUID.randomUUID())
             })
@@ -466,6 +508,38 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                         put("api", buildJsonArray { p.api.forEach { add(it) } })
                     })
                 }
+            })
+            "pluginManager/installBundle" -> {
+                val request = args["request"]?.jsonObject
+                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
+                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
+                    ?: return@routeRpc errorResult("gateway/arguments-invalid", "missing bundle")
+                val registry = DshWebServer.pluginRegistry
+                    ?: return@routeRpc errorResult("gateway/not-ready", "plugin registry not ready")
+                registry.setBundleEnabled(bundle, true)
+                okResult(buildJsonObject { put("installed", true) })
+            }
+            "pluginManager/setBundleEnabled" -> {
+                val request = args["request"]?.jsonObject
+                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
+                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
+                val enabled = request?.get("enabled")?.jsonPrimitive?.contentOrNull == "true"
+                if (bundle != null) {
+                    DshWebServer.pluginRegistry?.setBundleEnabled(bundle, enabled)
+                }
+                okResult(null)
+            }
+            "pluginManager/removeBundle" -> {
+                val request = args["request"]?.jsonObject
+                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
+                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
+                if (bundle != null) {
+                    DshWebServer.pluginRegistry?.removeBundle(bundle)
+                }
+                okResult(null)
+            }
+            "pluginManager/waitForInstall" -> okResult(buildJsonObject {
+                put("installed", true)
             })
             "settings/describe" -> {
                 val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
