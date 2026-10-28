@@ -2,7 +2,11 @@ package com.dshnative.app.dshweb
 
 import android.content.Context
 import android.util.Log
+import com.dshnative.app.llm.ApiMessage
+import com.dshnative.app.llm.LlmClient
+import com.dshnative.app.model.QuroModelConfigRepository
 import com.dshnative.app.plugins.PluginRegistry
+import com.dshnative.app.termux.TermuxManager
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoWSD
 import kotlinx.coroutines.CoroutineScope
@@ -433,15 +437,95 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                     })
                 }
             })
-            "pluginManager/listBundles" -> okResult(buildJsonArray { })
-            "pluginMarket/listIndexes" -> okResult(buildJsonArray { })
-            "settings/describe" -> okResult(buildJsonObject { })
+            "pluginManager/listBundles" -> okResult(buildJsonArray {
+                DshWebServer.pluginRegistry?.marketIndex()?.forEach { p ->
+                    add(buildJsonObject {
+                        put("id", p.bundleName.ifBlank { p.officialId })
+                        put("name", p.name)
+                        put("version", p.version)
+                        put("builtin", p.builtin)
+                        put("optional", p.optional)
+                        put("enabled", p.enabled)
+                    })
+                }
+            })
+            "pluginMarket/listIndexes" -> okResult(buildJsonArray {
+                DshWebServer.pluginRegistry?.marketIndex()?.forEach { p ->
+                    add(buildJsonObject {
+                        put("id", p.bundleName.ifBlank { p.officialId })
+                        put("bundleName", p.bundleName.ifBlank { p.officialId })
+                        put("name", p.name)
+                        put("description", p.description)
+                        put("category", p.category.name)
+                        put("version", p.version)
+                        put("author", p.author)
+                        put("builtin", p.builtin)
+                        put("optional", p.optional)
+                        put("enabled", p.enabled)
+                        put("tools", buildJsonArray { p.tools.forEach { add(it) } })
+                        put("api", buildJsonArray { p.api.forEach { add(it) } })
+                    })
+                }
+            })
+            "settings/describe" -> {
+                val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
+                val cfg = QuroModelConfigRepository(ctx).load()
+                okResult(buildJsonObject {
+                    put("provider", cfg.provider)
+                    put("model", cfg.model.ifBlank { "deepseek-chat" })
+                    put("baseUrl", cfg.baseUrl)
+                    put("apiKeyConfigured", cfg.apiKey.isNotEmpty())
+                })
+            }
+            "settings/update" -> {
+                val request = args["request"]?.jsonObject
+                val value = request?.get("value")?.jsonObject
+                if (value != null) {
+                    val ctx = appContext ?: return@routeRpc errorResult("gateway/not-ready", "server not started")
+                    val repo = QuroModelConfigRepository(ctx)
+                    val cfg = repo.load()
+                    val provider = value["provider"]?.jsonPrimitive?.contentOrNull ?: cfg.provider
+                    val baseUrl = value["baseUrl"]?.jsonPrimitive?.contentOrNull ?: cfg.baseUrl
+                    val apiKey = value["apiKey"]?.jsonPrimitive?.contentOrNull ?: cfg.apiKey
+                    val model = value["model"]?.jsonPrimitive?.contentOrNull ?: cfg.model
+                    repo.save(cfg.copy(
+                        provider = provider,
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        model = model.ifBlank { "deepseek-chat" }
+                    ))
+                }
+                okResult(null)
+            }
             "settings/mutate" -> okResult(null)
             "settings/replace" -> okResult(null)
-            "settings/update" -> okResult(null)
-            "terminal/list" -> okResult(buildJsonObject { put("items", buildJsonArray { }) })
-            "terminal/open" -> okResult(null)
-            "terminal/write" -> okResult(null)
+            "terminal/list" -> okResult(buildJsonObject {
+                put("items", buildJsonArray {
+                    add(buildJsonObject {
+                        put("id", "term-1")
+                        put("state", if (TermuxManager.isExtracted()) "ready" else "initializing")
+                        put("label", "内置 Termux")
+                    })
+                })
+            })
+            "terminal/open" -> {
+                val request = args["request"]?.jsonObject
+                okResult(buildJsonObject {
+                    put("sessionId", request?.get("sessionId")?.jsonPrimitive?.contentOrNull ?: "term-1")
+                })
+            }
+            "terminal/write" -> {
+                val request = args["request"]?.jsonObject
+                val sessionId = request?.get("sessionId")?.jsonPrimitive?.contentOrNull ?: "term-1"
+                val input = request?.get("input")?.jsonPrimitive?.contentOrNull ?: ""
+                val output = if (input.isBlank()) "" else {
+                    runCatching { TermuxManager.exec(input, 30) }.getOrElse { "错误: ${it.message}" }
+                }
+                okResult(buildJsonObject {
+                    put("sessionId", sessionId)
+                    put("output", output)
+                })
+            }
             "schedule/list" -> okResult(buildJsonObject { put("items", buildJsonArray { }) })
             "schedule/catalog" -> okResult(buildJsonArray { })
             "messageFeedback/list" -> okResult(buildJsonArray { })
@@ -502,9 +586,30 @@ class DshWebServer : NanoWSD(HOST, PORT) {
             })
         })
 
-        // 假回复：延迟推送 assistant-stream start/chunk/end + assistant/message 事件。
+        // 真实 LLM 调用：读取模型配置（模型名空时强制兜底 deepseek-chat，杜绝 HTTP 400）。
         scope.launch {
-            delay(400)
+            val reply: String = try {
+                val ctx = appContext
+                if (ctx == null) {
+                    "服务器尚未就绪。"
+                } else {
+                    val cfg = QuroModelConfigRepository(ctx).load()
+                    if (cfg.apiKey.isEmpty()) {
+                        "尚未配置 API Key。请先在「模型配置」中填写 API Key 与模型名。"
+                    } else {
+                        val model = cfg.model.trim().ifBlank { "deepseek-chat" }
+                        val llm = LlmClient(cfg.baseUrl, cfg.apiKey, model)
+                        val history = mutableListOf<ApiMessage>()
+                        history.add(ApiMessage("system", "你是 DshNative 内置助手，运行在 Android 设备上。你可以使用 shell、文件、网页等工具帮助用户完成任务。"))
+                        history.add(ApiMessage("user", text.ifBlank { "你好" }))
+                        val result = llm.chat(history, null)
+                        result.content.ifBlank { "（模型未返回内容）" }
+                    }
+                }
+            } catch (e: Exception) {
+                "错误：${e.message}"
+            }
+
             val attemptId = UUID.randomUUID().toString()
             broadcastFollow(sessionId, buildJsonObject {
                 put("type", "assistant-stream")
@@ -518,15 +623,8 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                 })
             })
 
-            val reply = buildString {
-                append("（DshNative 最小协议层假回复）")
-                append("你刚才说：").append(text.ifBlank { "（空消息）" })
-                append("。\n\n")
-                append("当前运行在 Android 本地 WebView 中，由 NanoHTTPD 提供 /api RPC 桥与 /api/remote.mux WebSocket 流。")
-            }
             val chunks = reply.chunked(6)
             chunks.forEachIndexed { index, chunk ->
-                delay(120)
                 broadcastFollow(sessionId, buildJsonObject {
                     put("type", "assistant-stream")
                     put("frame", buildJsonObject {
@@ -540,7 +638,6 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                 })
             }
 
-            delay(150)
             val assistantSeq = session.nextSeq()
             session.running = false
             broadcastFollow(sessionId, buildJsonObject {
@@ -578,7 +675,6 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                     })
                 })
             })
-            // 完整体地推进 turn，供下次消息使用。
             session.turn += 1
         }
 
