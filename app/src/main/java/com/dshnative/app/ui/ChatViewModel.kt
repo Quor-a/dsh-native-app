@@ -13,6 +13,8 @@ import com.dshnative.app.config.AppConfig
 import com.dshnative.app.data.ConversationStore
 import com.dshnative.app.llm.ApiMessage
 import com.dshnative.app.llm.LlmClient
+import com.dshnative.app.model.ApiProviderConfigs
+import com.dshnative.app.model.ApiProviderType
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.model.QuroModelConfigRepository
@@ -115,7 +117,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     appendAssistant("尚未配置 API Key，请在模型配置中填写。")
                     return@launch
                 }
-                val llm = LlmClient(cfg.baseUrl, cfg.apiKey, cfg.model)
+                // 模型名为空时用服务商默认模型，避免 API 返回 model is required
+                val model = cfg.model.ifBlank {
+                    try {
+                        ApiProviderConfigs.getDefaultModelName(ApiProviderType.valueOf(cfg.provider))
+                    } catch (_: Exception) {
+                        "deepseek-chat"
+                    }
+                }
+                val llm = LlmClient(cfg.baseUrl, cfg.apiKey, model)
                 val engine = AgentEngine(llm, tools)
                 val apiMessages = buildApiMessages()
                 engine.run(

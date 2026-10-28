@@ -48,16 +48,21 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
+// 终端页固定深色配色：终端仿真器恒为深色（与 DSH web 终端一致），不随浅色/深色主题切换，
+// 因此这里不使用 MaterialTheme.colorScheme / AppColor，而是显式定义终端专用色板。
+private val TerminalBg = Color(0xFF0B0E14)
+private val TerminalFg = Color(0xFFE6EDF3)
+private val TerminalGreen = Color(0xFF3FB950)
+private val TerminalPrompt = Color(0xFF58A6FF)
+private val TerminalBar = Color(0xFF161B22)
+private val TerminalWarn = Color(0xFFE3B341)
+
 /** 内置 Termux 终端（对应 DSH sidebar-terminal） */
 @Composable
 fun TerminalScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
-    val bg = Color(0xFF0B0E14)
-    val fg = Color(0xFFE6EDF3)
-    val green = Color(0xFF3FB950)
-    val promptColor = Color(0xFF58A6FF)
 
     var lines by remember { mutableStateOf(listOf("DshNative 内置 Termux 终端")) }
     var input by remember { mutableStateOf("") }
@@ -111,26 +116,26 @@ fun TerminalScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg)
+            .background(TerminalBg)
     ) {
         // 顶栏
-        Surface(color = Color(0xFF161B22)) {
+        Surface(color = TerminalBar) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回",
-                        tint = fg)
+                        tint = TerminalFg)
                 }
-                Icon(Icons.Filled.Terminal, contentDescription = null, tint = green,
+                Icon(Icons.Filled.Terminal, contentDescription = null, tint = TerminalGreen,
                     modifier = Modifier.width(18.dp).height(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("终端", color = fg, fontSize = 15.sp, fontFamily = FontFamily.Monospace)
+                Text("终端", color = TerminalFg, fontSize = 15.sp, fontFamily = FontFamily.Monospace)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     if (ready) "● 就绪" else if (extracting) "解压中…" else "未就绪",
-                    color = if (ready) green else Color(0xFFE3B341),
+                    color = if (ready) TerminalGreen else TerminalWarn,
                     fontSize = 12.sp
                 )
             }
@@ -142,37 +147,37 @@ fun TerminalScreen(onBack: () -> Unit) {
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(12.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             lines.forEach { line ->
                 val isPrompt = line.startsWith("$ ")
                 Text(
                     text = line,
-                    color = if (isPrompt) promptColor else fg,
+                    color = if (isPrompt) TerminalPrompt else TerminalFg,
                     fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace
                 )
             }
             if (busy) {
-                Text("…", color = green, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+                Text("…", color = TerminalGreen, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
             }
         }
 
         // 输入区
-        Surface(color = Color(0xFF161B22)) {
+        Surface(color = TerminalBar) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("$", color = green, fontSize = 15.sp, fontFamily = FontFamily.Monospace)
+                Text("$", color = TerminalGreen, fontSize = 15.sp, fontFamily = FontFamily.Monospace)
                 Spacer(Modifier.width(8.dp))
                 BasicTextField(
                     value = input,
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
-                    textStyle = TextStyle(color = fg, fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                    cursorBrush = androidx.compose.ui.graphics.SolidColor(green),
+                    textStyle = TextStyle(color = TerminalFg, fontSize = 14.sp, fontFamily = FontFamily.Monospace),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(TerminalGreen),
                     keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = { runCommand(input) })
                 ) { inner -> inner() }
@@ -180,7 +185,7 @@ fun TerminalScreen(onBack: () -> Unit) {
                     onClick = { runCommand(input) },
                     enabled = ready && !busy
                 ) {
-                    Icon(Icons.Filled.Send, contentDescription = "执行", tint = green)
+                    Icon(Icons.Filled.Send, contentDescription = "执行", tint = TerminalGreen)
                 }
             }
         }

@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +34,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Send
@@ -72,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dshnative.app.config.AppConfig
+import com.dshnative.app.dshweb.WebUiScreen
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.plugins.PluginsScreen
@@ -100,6 +105,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     var showTerminal by remember { mutableStateOf(false) }
     var showModelConfig by remember { mutableStateOf(false) }
     var showWorkspace by remember { mutableStateOf(false) }
+    var showWebUi by remember { mutableStateOf(false) }
+    var showPermissions by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
 
@@ -111,6 +118,10 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
         ModelConfigScreen(onBack = { showModelConfig = false })
     } else if (showWorkspace) {
         WorkspaceScreen(onBack = { showWorkspace = false })
+    } else if (showWebUi) {
+        WebUiScreen(onBack = { showWebUi = false })
+    } else if (showPermissions) {
+        PermissionsScreen(onBack = { showPermissions = false })
     } else {
         CompositionLocalProvider(LocalMarkwon provides markwon) {
         ModalNavigationDrawer(
@@ -131,7 +142,9 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     onRename = { id, title -> viewModel.renameConversation(id, title) },
                     onPlugins = { showPlugins = true },
                     onTerminal = { showTerminal = true },
-                    onWorkspace = { showWorkspace = true }
+                    onWorkspace = { showWorkspace = true },
+                    onWebUi = { showWebUi = true },
+                    onPermissions = { showPermissions = true }
                 )
             }
         ) {
@@ -147,7 +160,10 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     onNew = { viewModel.newConversation() },
                     onSettings = { showModelConfig = true }
                 )
-                DshMessageList(viewModel = viewModel)
+                DshMessageList(
+                    messages = current?.messages ?: emptyList(),
+                    toolStatus = viewModel.toolStatus.value
+                )
                 DshComposer(
                     model = config.model,
                     busy = busy,
@@ -179,7 +195,7 @@ fun DshTopBar(title: String, onMenu: () -> Unit, onNew: () -> Unit, onSettings: 
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onMenu) {
@@ -207,8 +223,7 @@ fun DshTopBar(title: String, onMenu: () -> Unit, onNew: () -> Unit, onSettings: 
 
 /** 消息流：助手消息无气泡，用户消息深灰气泡（DSH 风格） */
 @Composable
-fun DshMessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
-    val messages = viewModel.currentConversation?.messages ?: emptyList()
+fun DshMessageList(messages: List<ChatMessage>, toolStatus: String, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
@@ -223,18 +238,17 @@ fun DshMessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
                 DshEmptyState()
             }
         }
-        items(messages) { msg ->
+        itemsIndexed(messages, key = { index, msg -> "${index}_${msg.role}" }) { _, msg ->
             DshMessageBubble(msg)
         }
-        val toolStatus = viewModel.toolStatus.value
         if (toolStatus.isNotEmpty()) {
             item {
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     Text(
                         text = "⚙  $toolStatus",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
-                        modifier = Modifier.padding(start = 4.dp)
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
             }
@@ -272,7 +286,7 @@ fun DshMessageBubble(msg: ChatMessage) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp)
             .widthIn(max = ChatContentMaxWidth),
         horizontalArrangement = Arrangement.Start
     ) {
@@ -280,13 +294,13 @@ fun DshMessageBubble(msg: ChatMessage) {
             // 用户消息：深灰气泡，20dp 圆角（DSH Sixlwa_bubble）
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.widthIn(max = 480.dp)
             ) {
                 Text(
                     text = msg.content,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -325,7 +339,7 @@ fun DshMessageBubble(msg: ChatMessage) {
 @Composable
 fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: (String) -> Unit) {
     var input by remember { mutableStateOf("") }
-    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(28.dp),
@@ -336,16 +350,22 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(999.dp))
-                            .clickable(onClick = onModelClick)
-                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                            .height(48.dp)
+                            .clickable(onClick = onModelClick),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = model,
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(999.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = model,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -366,7 +386,7 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                         modifier = Modifier
                             .weight(1f)
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 8.dp),
                         decorationBox = { inner ->
                             if (input.isEmpty()) {
                                 Text(
@@ -388,7 +408,7 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                     } else {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(48.dp)
                                 .background(
                                     if (input.isNotBlank()) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
@@ -425,7 +445,9 @@ fun DshSidebar(
     onRename: (String, String) -> Unit,
     onPlugins: () -> Unit,
     onTerminal: () -> Unit,
-    onWorkspace: () -> Unit
+    onWorkspace: () -> Unit,
+    onWebUi: () -> Unit,
+    onPermissions: () -> Unit
 ) {
     var renameTarget by remember { mutableStateOf<String?>(null) }
     Column(
@@ -433,7 +455,7 @@ fun DshSidebar(
             .fillMaxHeight()
             .width(288.dp)
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         // 品牌行：DeepSeek Harness + 预览版 badge
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -467,10 +489,10 @@ fun DshSidebar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                 .clickable { onNew() }
-                .padding(vertical = 10.dp),
+                .heightIn(min = 48.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -485,9 +507,10 @@ fun DshSidebar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                 .clickable { onPlugins() }
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp)
+                .heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Filled.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -502,9 +525,10 @@ fun DshSidebar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                 .clickable { onTerminal() }
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp)
+                .heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Filled.Terminal, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -519,9 +543,10 @@ fun DshSidebar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                 .clickable { onWorkspace() }
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp)
+                .heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -529,6 +554,42 @@ fun DshSidebar(
             Text("工作区", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
             Spacer(Modifier.weight(1f))
             Text("文件", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+
+        // Web UI 入口
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                .clickable { onWebUi() }
+                .padding(horizontal = 8.dp)
+                .heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Web UI", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+            Spacer(Modifier.weight(1f))
+            Text("浏览器", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+
+        // 权限管理入口
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                .clickable { onPermissions() }
+                .padding(horizontal = 8.dp)
+                .heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("权限", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+            Spacer(Modifier.weight(1f))
+            Text("管理", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
         Spacer(Modifier.height(10.dp))
 
@@ -551,22 +612,29 @@ fun DshSidebar(
                         .background(
                             if (selected) MaterialTheme.colorScheme.outlineVariant
                             else Color.Transparent,
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(8.dp)
                         )
                         .clickable { onSelect(conv.id) }
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                        .padding(start = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = conv.title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f).clickable { renameTarget = conv.id }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clickable { renameTarget = conv.id },
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            text = conv.title,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                     IconButton(
-                        onClick = { onDelete(conv.id) },
-                        modifier = Modifier.size(26.dp)
+                        onClick = { onDelete(conv.id) }
                     ) {
                         Icon(Icons.Filled.Delete, contentDescription = "删除",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
@@ -660,10 +728,11 @@ fun ModelPickerDialog(
                             .background(
                                 if (m == current) MaterialTheme.colorScheme.outlineVariant
                                 else Color.Transparent,
-                                RoundedCornerShape(10.dp)
+                                RoundedCornerShape(8.dp)
                             )
                             .clickable { onSelect(m) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 16.dp)
+                            .heightIn(min = 48.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(

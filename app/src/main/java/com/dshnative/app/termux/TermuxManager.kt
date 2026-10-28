@@ -69,23 +69,53 @@ object TermuxManager {
                 ready = false
                 false
             } else {
-                val tmpTar = File(filesDir, "termux-bootstrap-tmp.tar.gz")
+                val tmpTar = File(filesDir, "termux-bootstrap-tmp")
                 try {
-                    context.assets.open(ASSET).use { input ->
-                        tmpTar.outputStream().use { out -> input.copyTo(out) }
+                    // aapt 打包 assets 时会把 .gz 自动解压成 .tar 放进 APK，
+                    // 因此这里两个名字都要尝试（先 .tar，后 .gz）。
+                    val assetName = try {
+                        val names = context.assets.list("").orEmpty()
+                        when {
+                            names.contains("termux-bootstrap.tar") -> "termux-bootstrap.tar"
+                            names.contains(ASSET) -> ASSET
+                            else -> null
+                        }
+                    } catch (_: Exception) {
+                        ASSET
                     }
-                    GZIPInputStream(tmpTar.inputStream()).use { gz ->
-                        extractTar(gz, filesDir)
+                    if (assetName == null) {
+                        lastError = "解压失败：assets 中找不到 Termux bootstrap"
+                        ready = false
+                        false
+                    } else {
+                        context.assets.open(assetName).use { input ->
+                            tmpTar.outputStream().use { out -> input.copyTo(out) }
+                        }
+                        // 检测是否为 gzip（魔数 1f 8b），兼容 .tar.gz 与已解压的 .tar
+                        val isGzip = tmpTar.inputStream().use { ins ->
+                            val b1 = ins.read()
+                            val b2 = ins.read()
+                            b1 == 0x1f && b2 == 0x8b
+                        }
+                        if (isGzip) {
+                            GZIPInputStream(tmpTar.inputStream()).use { gz ->
+                                extractTar(gz, filesDir)
+                            }
+                        } else {
+                            tmpTar.inputStream().use { raw ->
+                                extractTar(raw, filesDir)
+                            }
+                        }
+                        tmpTar.delete()
+                        ready = true
+                        lastError = null
+                        true
                     }
-                    tmpTar.delete()
-                    ready = true
-                    lastError = null
-                    true
                 } catch (e: Exception) {
                     // 解压失败：清理残留，下次重试
                     try { tmpTar.delete() } catch (_: Exception) {}
                     try { usr.deleteRecursively() } catch (_: Exception) {}
-                    lastError = "解压失败：${e.message ?: "未知错误"}"
+                    lastError = "解压失败：${e.javaClass.simpleName}${e.message?.let { "：$it" } ?: ""}"
                     ready = false
                     false
                 }

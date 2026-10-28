@@ -54,4 +54,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3'
     implementation 'io.noties.markwon:core:4.6.2'
+    // 本地 DSH 前端协议层：轻量 HTTP + WebSocket 服务器（纯 Java 单 jar）
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    implementation 'org.nanohttpd:nanohttpd-websocket:2.3.1'
 }

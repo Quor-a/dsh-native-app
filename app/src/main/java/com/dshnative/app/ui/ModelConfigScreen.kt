@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +53,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dshnative.app.model.ApiProviderConfigs
 import com.dshnative.app.model.ApiProviderType
 import com.dshnative.app.model.QuroCustomProvider
@@ -64,12 +69,10 @@ import com.dshnative.app.model.QuroModelListFetcher
 import com.dshnative.app.model.QuroModelListResult
 import com.dshnative.app.model.QuroSavedProfileRepository
 import com.dshnative.app.model.toProfile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /** ZorvAI 模型配置 ViewModel（移植自 QuroModelConfigViewModel） */
-class ModelConfigViewModel(private val context: Context) {
+class ModelConfigViewModel(private val context: Context) : ViewModel() {
     val repo = QuroModelConfigRepository(context.applicationContext)
     val profilesRepo = QuroSavedProfileRepository(context.applicationContext)
     val customRepo = QuroCustomProviderRepository(context.applicationContext)
@@ -105,7 +108,7 @@ class ModelConfigViewModel(private val context: Context) {
         val c = cfg
         isFetchingModels = true
         modelList = null
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch {
             val res = try {
                 fetcher.fetch(c.baseUrl, c.apiKey)
             } catch (e: Exception) {
@@ -152,8 +155,11 @@ class ModelConfigViewModel(private val context: Context) {
 @Composable
 fun ModelConfigScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val vm = remember { ModelConfigViewModel(context) }
-    val scope = rememberCoroutineScope()
+    val vm: ModelConfigViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { ModelConfigViewModel(context) }
+        }
+    )
     var showApiKey by remember { mutableStateOf(false) }
     var profileName by remember { mutableStateOf("") }
     var showAddCustom by remember { mutableStateOf(false) }
@@ -172,13 +178,13 @@ fun ModelConfigScreen(onBack: () -> Unit) {
         // 顶栏
         Surface(color = MaterialTheme.colorScheme.surface) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(4.dp, 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(8.dp, 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = MaterialTheme.colorScheme.onSurface)
                 }
-                Column(Modifier.padding(start = 4.dp)) {
+                Column(Modifier.padding(start = 8.dp)) {
                     Text("设置", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("模型配置", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 }
@@ -197,7 +203,7 @@ fun ModelConfigScreen(onBack: () -> Unit) {
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(Modifier.padding(14.dp)) {
+                    Column(Modifier.padding(16.dp)) {
                         Text("当前接入点", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             "${cfg.provider} · ${cfg.model.ifBlank { "未选模型" }}",
@@ -215,26 +221,32 @@ fun ModelConfigScreen(onBack: () -> Unit) {
             item {
                 Text("服务商", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(ApiProviderConfigs.allConfigs()) { p ->
+                    items(ApiProviderConfigs.allConfigs(), key = { it.providerType.name }) { p ->
                         val selected = p.providerType.name == cfg.provider
                         Box(
                             modifier = Modifier
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(999.dp)
-                                )
-                                .border(
-                                    1.dp,
-                                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                    RoundedCornerShape(999.dp)
-                                )
+                                .height(48.dp)
                                 .clickable {
                                     vm.update { copy(provider = p.providerType.name, baseUrl = p.defaultApiEndpoint, model = p.defaultModelName) }
-                                }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(p.providerType.name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(999.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                        RoundedCornerShape(999.dp)
+                                    )
+                                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                            ) {
+                                Text(p.providerType.name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                            }
                         }
                     }
                 }
@@ -295,7 +307,7 @@ fun ModelConfigScreen(onBack: () -> Unit) {
             // 高级设置
             item {
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("高级设置", style = MaterialTheme.typography.titleSmall)
                         SettingsSlider("Temperature", cfg.temperature, onChange = { v -> vm.update { copy(temperature = v) } })
                         SettingsSlider("Max Tokens", cfg.maxTokens.toFloat(), { v -> vm.update { copy(maxTokens = v.toInt()) } }, 256f, 131072f)
@@ -326,11 +338,11 @@ fun ModelConfigScreen(onBack: () -> Unit) {
                 vm.savedProfiles.forEach { p ->
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     ) {
                         Row(
-                            Modifier.clickable { vm.applyProfile(p) }.padding(12.dp),
+                            Modifier.clickable { vm.applyProfile(p) }.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f)) {
@@ -358,10 +370,10 @@ fun ModelConfigScreen(onBack: () -> Unit) {
                 vm.customProviders.forEach { cp ->
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     ) {
-                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(cp.name, style = MaterialTheme.typography.bodyMedium)
                                 Text(cp.baseUrl, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -397,9 +409,12 @@ fun ModelConfigScreen(onBack: () -> Unit) {
                     title = { Text("选择模型（${result.models.size}）") },
                     text = {
                         LazyColumn {
-                            items(result.models) { m ->
+                            items(result.models, key = { it.id }) { m ->
                                 Row(
-                                    Modifier.fillMaxWidth().clickable { vm.selectModel(m.id) }.padding(vertical = 8.dp),
+                                    Modifier.fillMaxWidth()
+                                        .clickable { vm.selectModel(m.id) }
+                                        .padding(horizontal = 16.dp)
+                                        .heightIn(min = 48.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(m.id, modifier = Modifier.weight(1f), fontSize = 13.sp)

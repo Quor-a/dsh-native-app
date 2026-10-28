@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-43:12
-INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-43:12
-INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-43:12
-INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-43:12
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-87:12
+INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-87:12
+INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-87:12
+INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:1-87:12
 MERGED from [androidx.activity:activity:1.9.0] /home/agentuser/.gradle/caches/transforms-4/835414c654bebefb662cc3db6d91cfaa/transformed/activity-1.9.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.activity:activity-ktx:1.9.0] /home/agentuser/.gradle/caches/transforms-4/1add1ff6dbbe198d0eb971e737567055/transformed/activity-ktx-1.9.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material3:material3-android:1.2.1] /home/agentuser/.gradle/caches/transforms-4/33f9168c9504c96fe975327b4315b846/transformed/material3-release/AndroidManifest.xml:17:1-22:12
@@ -56,34 +56,160 @@ MERGED from [androidx.arch.core:core-runtime:2.2.0] /home/agentuser/.gradle/cach
 	xmlns:android
 		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:2:11-69
 uses-permission#android.permission.INTERNET
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:4:5-67
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:5-67
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:4:22-64
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:22-64
 uses-permission#android.permission.POST_NOTIFICATIONS
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:5-77
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:5-77
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:22-74
-uses-permission#android.permission.READ_EXTERNAL_STORAGE
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:5-80
-	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:22-77
-uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:5-108
-	android:maxSdkVersion
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:79-105
-	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:22-78
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:22-74
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:5-77
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:5-77
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:22-74
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:22-74
 uses-permission#android.permission.FOREGROUND_SERVICE_SPECIAL_USE
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:5-89
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:5-89
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:22-86
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:22-86
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:5-68
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:22-65
+uses-permission#android.permission.READ_EXTERNAL_STORAGE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:5-107
+	android:maxSdkVersion
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:78-104
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:22-77
+uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:5-108
+	android:maxSdkVersion
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:79-105
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:22-78
+uses-permission#android.permission.READ_MEDIA_IMAGES
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:5-76
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:22-73
+uses-permission#android.permission.READ_MEDIA_VIDEO
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:5-75
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:22-72
+uses-permission#android.permission.READ_MEDIA_AUDIO
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:5-75
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:22-72
+uses-permission#android.permission.MANAGE_EXTERNAL_STORAGE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:17:5-82
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:17:22-79
+uses-permission#android.permission.NEARBY_WIFI_DEVICES
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:5-78
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:22-75
+uses-permission#android.permission.ACCESS_WIFI_STATE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:5-76
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:22-73
+uses-permission#android.permission.CHANGE_WIFI_STATE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:5-76
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:22-73
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:5-79
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:5-81
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:22-78
+uses-permission#android.permission.CAMERA
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:27:5-65
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:27:22-62
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:28:5-71
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:28:22-68
+uses-permission#android.permission.READ_CONTACTS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:5-72
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:22-69
+uses-permission#android.permission.WRITE_CONTACTS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:5-73
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:22-70
+uses-permission#android.permission.READ_CALENDAR
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:5-72
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:22-69
+uses-permission#android.permission.WRITE_CALENDAR
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:5-73
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:22-70
+uses-permission#android.permission.READ_CALL_LOG
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:5-72
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:22-69
+uses-permission#android.permission.WRITE_CALL_LOG
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:36:5-73
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:36:22-70
+uses-permission#android.permission.READ_PHONE_STATE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:5-75
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:22-72
+uses-permission#android.permission.READ_PHONE_NUMBERS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:5-77
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:22-74
+uses-permission#android.permission.CALL_PHONE
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:5-69
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:22-66
+uses-permission#android.permission.READ_SMS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:40:5-67
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:40:22-64
+uses-permission#android.permission.RECEIVE_SMS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:41:5-70
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:41:22-67
+uses-permission#android.permission.SEND_SMS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:42:5-67
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:42:22-64
+uses-permission#android.permission.SCHEDULE_EXACT_ALARM
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:45:5-79
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:45:22-76
+uses-permission#android.permission.USE_FULL_SCREEN_INTENT
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:46:5-81
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:46:22-78
+uses-permission#android.permission.SYSTEM_ALERT_WINDOW
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:47:5-78
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:47:22-75
+uses-permission#android.permission.WRITE_SETTINGS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:48:5-73
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:48:22-70
+uses-permission#android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:49:5-95
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:49:22-92
+uses-permission#android.permission.QUERY_ALL_PACKAGES
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:52:5-77
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:52:22-74
+uses-permission#android.permission.PACKAGE_USAGE_STATS
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:53:5-78
+	android:name
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:53:22-75
 application
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:11:5-42:19
-INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:11:5-42:19
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:55:5-86:19
+INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:55:5-86:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:23:5-33:19
@@ -101,55 +227,55 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/agentuser/.gradle/cac
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:9-35
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:59:9-35
 	android:label
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:9-41
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:58:9-41
 	android:icon
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:9-43
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:57:9-43
 	android:allowBackup
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:9-35
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:56:9-35
 	android:theme
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:9-47
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:60:9-47
 activity#com.dshnative.app.MainActivity
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:18:9-26:20
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:62:9-70:20
 	android:exported
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:13-36
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:64:13-36
 	android:configChanges
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:13-74
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:65:13-74
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:19:13-41
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:63:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:13-25:29
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:66:13-69:29
 action#android.intent.action.MAIN
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:17-69
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:67:17-69
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:25-66
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:67:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:17-77
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:68:17-77
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:27-74
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:68:27-74
 service#com.dshnative.app.service.DshAccessibilityService
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:29:9-40:19
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:73:9-84:19
 	android:label
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:13-56
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:76:13-56
 	android:exported
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:13-37
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:75:13-37
 	android:permission
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:13-79
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:77:13-79
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:30:13-60
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:74:13-60
 intent-filter#action:name:android.accessibilityservice.AccessibilityService
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:13-36:29
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:78:13-80:29
 action#android.accessibilityservice.AccessibilityService
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:17-92
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:79:17-92
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:25-89
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:79:25-89
 meta-data#android.accessibilityservice
-ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:13-39:72
+ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:81:13-83:72
 	android:resource
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:17-69
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:83:17-69
 	android:name
-		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:17-60
+		ADDED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml:82:17-60
 uses-sdk
 INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/agentuser/DshNative/app/src/main/AndroidManifest.xml

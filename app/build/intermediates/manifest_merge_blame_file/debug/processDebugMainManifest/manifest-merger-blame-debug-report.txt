@@ -8,166 +8,275 @@
 8        android:minSdkVersion="26"
 9        android:targetSdkVersion="34" />
 10
-11    <uses-permission android:name="android.permission.INTERNET" />
-11-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:4:5-67
-11-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:4:22-64
-12    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-12-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:5-77
-12-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:22-74
-13    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-13-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:5-80
-13-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:22-77
-14    <uses-permission
-14-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:5-108
-15        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-15-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:22-78
-16        android:maxSdkVersion="29" />
-16-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:79-105
-17    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-17-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:5-77
-17-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:22-74
-18    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-18-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:5-89
-18-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:22-86
-19
-20    <permission
-20-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
-21        android:name="com.dshnative.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-21-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
-22        android:protectionLevel="signature" />
-22-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
-23
-24    <uses-permission android:name="com.dshnative.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-24-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
-24-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
-25
-26    <application
-26-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:11:5-42:19
-27        android:allowBackup="true"
-27-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:9-35
-28        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-28-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
-29        android:debuggable="true"
-30        android:extractNativeLibs="false"
-31        android:icon="@mipmap/ic_launcher"
-31-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:9-43
-32        android:label="@string/app_name"
-32-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:9-41
-33        android:supportsRtl="true"
-33-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:9-35
-34        android:theme="@style/Theme.DshNative" >
-34-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:9-47
-35        <activity
-35-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:18:9-26:20
-36            android:name="com.dshnative.app.MainActivity"
-36-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:19:13-41
-37            android:configChanges="orientation|screenSize|keyboardHidden"
-37-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:13-74
-38            android:exported="true" >
-38-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:13-36
-39            <intent-filter>
-39-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:13-25:29
-40                <action android:name="android.intent.action.MAIN" />
-40-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:17-69
-40-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:25-66
-41
-42                <category android:name="android.intent.category.LAUNCHER" />
-42-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:17-77
-42-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:27-74
-43            </intent-filter>
-44        </activity>
-45
-46        <!-- 无障碍服务：UI 树 / 点击 / 滑动 / 输入 / 截图 -->
-47        <service
-47-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:29:9-40:19
-48            android:name="com.dshnative.app.service.DshAccessibilityService"
-48-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:30:13-60
-49            android:exported="false"
-49-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:13-37
-50            android:label="@string/accessibility_label"
-50-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:13-56
-51            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
-51-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:13-79
-52            <intent-filter>
-52-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:13-36:29
-53                <action android:name="android.accessibilityservice.AccessibilityService" />
-53-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:17-92
-53-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:25-89
-54            </intent-filter>
-55
-56            <meta-data
-56-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:13-39:72
-57                android:name="android.accessibilityservice"
-57-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:17-60
-58                android:resource="@xml/accessibility_service_config" />
-58-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:17-69
-59        </service>
-60
-61        <provider
-61-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
-62            android:name="androidx.startup.InitializationProvider"
-62-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
-63            android:authorities="com.dshnative.app.androidx-startup"
-63-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
-64            android:exported="false" >
-64-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
-65            <meta-data
-65-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
-66                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-66-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
-67                android:value="androidx.startup" />
-67-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
-68            <meta-data
-68-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:29:13-31:52
-69                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-69-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:30:17-78
-70                android:value="androidx.startup" />
-70-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:31:17-49
-71            <meta-data
-71-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
-72                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-72-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
-73                android:value="androidx.startup" />
-73-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
-74        </provider>
-75
-76        <receiver
-76-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
-77            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-77-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
-78            android:directBootAware="false"
-78-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
-79            android:enabled="true"
-79-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
-80            android:exported="true"
-80-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
-81            android:permission="android.permission.DUMP" >
-81-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
-82            <intent-filter>
-82-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
-83                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-83-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
-83-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
-84            </intent-filter>
+11    <!-- 网络/通知/前台服务 -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:5-67
+12-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:5:22-64
+13    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+13-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:5-77
+13-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:6:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:5-77
+14-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:7:22-74
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+15-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:5-89
+15-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:8:22-86
+16    <uses-permission android:name="android.permission.WAKE_LOCK" />
+16-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:5-68
+16-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:9:22-65
+17
+18    <!-- 存储/文件 -->
+19    <uses-permission
+19-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:5-107
+20        android:name="android.permission.READ_EXTERNAL_STORAGE"
+20-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:22-77
+21        android:maxSdkVersion="32" />
+21-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:12:78-104
+22    <uses-permission
+22-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:5-108
+23        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+23-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:22-78
+24        android:maxSdkVersion="29" />
+24-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:13:79-105
+25    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+25-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:5-76
+25-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:14:22-73
+26    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+26-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:5-75
+26-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:15:22-72
+27    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+27-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:5-75
+27-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:16:22-72
+28    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+28-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:17:5-82
+28-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:17:22-79
+29
+30    <!-- 附近设备 / WLAN -->
+31    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+31-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:5-78
+31-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:20:22-75
+32    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+32-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:5-76
+32-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:21:22-73
+33    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+33-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:5-76
+33-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:22:22-73
+34    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+34-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:5-79
+34-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:23:22-76
+35    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+35-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:5-81
+35-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:24:22-78
+36
+37    <!-- 相机/麦克风 -->
+38    <uses-permission android:name="android.permission.CAMERA" />
+38-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:27:5-65
+38-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:27:22-62
+39    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+39-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:28:5-71
+39-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:28:22-68
+40
+41    <!-- 联系人 / 日历 / 通话记录 / 电话 -->
+42    <uses-permission android:name="android.permission.READ_CONTACTS" />
+42-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:5-72
+42-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:31:22-69
+43    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+43-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:5-73
+43-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:32:22-70
+44    <uses-permission android:name="android.permission.READ_CALENDAR" />
+44-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:5-72
+44-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:33:22-69
+45    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+45-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:5-73
+45-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:34:22-70
+46    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+46-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:5-72
+46-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:35:22-69
+47    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
+47-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:36:5-73
+47-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:36:22-70
+48    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+48-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:5-75
+48-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:37:22-72
+49    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+49-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:5-77
+49-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:38:22-74
+50    <uses-permission android:name="android.permission.CALL_PHONE" />
+50-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:5-69
+50-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:39:22-66
+51    <uses-permission android:name="android.permission.READ_SMS" />
+51-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:40:5-67
+51-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:40:22-64
+52    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+52-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:41:5-70
+52-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:41:22-67
+53    <uses-permission android:name="android.permission.SEND_SMS" />
+53-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:42:5-67
+53-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:42:22-64
+54
+55    <!-- 闹钟 / 全屏通知 / 悬浮窗 / 画中画 -->
+56    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+56-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:45:5-79
+56-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:45:22-76
+57    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+57-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:46:5-81
+57-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:46:22-78
+58    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+58-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:47:5-78
+58-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:47:22-75
+59    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+59-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:48:5-73
+59-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:48:22-70
+60    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+60-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:49:5-95
+60-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:49:22-92
+61
+62    <!-- 应用列表 / 使用统计 / 包可见性 -->
+63    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+63-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:52:5-77
+63-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:52:22-74
+64    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+64-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:53:5-78
+64-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:53:22-75
+65
+66    <permission
+66-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+67        android:name="com.dshnative.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+67-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+68        android:protectionLevel="signature" />
+68-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+69
+70    <uses-permission android:name="com.dshnative.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+70-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+70-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+71
+72    <application
+72-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:55:5-86:19
+73        android:allowBackup="true"
+73-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:56:9-35
+74        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+74-->[androidx.core:core:1.13.1] /home/agentuser/.gradle/caches/transforms-4/a94da5e8fc3a1d9af61f9f6be47994ef/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+75        android:debuggable="true"
+76        android:extractNativeLibs="false"
+77        android:icon="@mipmap/ic_launcher"
+77-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:57:9-43
+78        android:label="@string/app_name"
+78-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:58:9-41
+79        android:supportsRtl="true"
+79-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:59:9-35
+80        android:theme="@style/Theme.DshNative" >
+80-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:60:9-47
+81        <activity
+81-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:62:9-70:20
+82            android:name="com.dshnative.app.MainActivity"
+82-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:63:13-41
+83            android:configChanges="orientation|screenSize|keyboardHidden"
+83-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:65:13-74
+84            android:exported="true" >
+84-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:64:13-36
 85            <intent-filter>
-85-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
-86                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-86-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
-86-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
-87            </intent-filter>
-88            <intent-filter>
-88-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
-89                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
-90            </intent-filter>
-91            <intent-filter>
-91-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
-92                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-92-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
-92-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
-93            </intent-filter>
-94        </receiver>
-95    </application>
-96
-97</manifest>
+85-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:66:13-69:29
+86                <action android:name="android.intent.action.MAIN" />
+86-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:67:17-69
+86-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:67:25-66
+87
+88                <category android:name="android.intent.category.LAUNCHER" />
+88-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:68:17-77
+88-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:68:27-74
+89            </intent-filter>
+90        </activity>
+91
+92        <!-- 无障碍服务：UI 树 / 点击 / 滑动 / 输入 / 截图 -->
+93        <service
+93-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:73:9-84:19
+94            android:name="com.dshnative.app.service.DshAccessibilityService"
+94-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:74:13-60
+95            android:exported="false"
+95-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:75:13-37
+96            android:label="@string/accessibility_label"
+96-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:76:13-56
+97            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+97-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:77:13-79
+98            <intent-filter>
+98-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:78:13-80:29
+99                <action android:name="android.accessibilityservice.AccessibilityService" />
+99-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:79:17-92
+99-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:79:25-89
+100            </intent-filter>
+101
+102            <meta-data
+102-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:81:13-83:72
+103                android:name="android.accessibilityservice"
+103-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:82:17-60
+104                android:resource="@xml/accessibility_service_config" />
+104-->/home/agentuser/DshNative/app/src/main/AndroidManifest.xml:83:17-69
+105        </service>
+106
+107        <provider
+107-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+108            android:name="androidx.startup.InitializationProvider"
+108-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+109            android:authorities="com.dshnative.app.androidx-startup"
+109-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+110            android:exported="false" >
+110-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+111            <meta-data
+111-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+112                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+112-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+113                android:value="androidx.startup" />
+113-->[androidx.emoji2:emoji2:1.3.0] /home/agentuser/.gradle/caches/transforms-4/4b953ed2c85a1890b7389e19a523ad8f/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+114            <meta-data
+114-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:29:13-31:52
+115                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+115-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:30:17-78
+116                android:value="androidx.startup" />
+116-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/agentuser/.gradle/caches/transforms-4/99eddb4b62a2134ea13e4e7d7565a681/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:31:17-49
+117            <meta-data
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+118                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+118-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+119                android:value="androidx.startup" />
+119-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+120        </provider>
+121
+122        <receiver
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+123            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+124            android:directBootAware="false"
+124-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+125            android:enabled="true"
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+126            android:exported="true"
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+127            android:permission="android.permission.DUMP" >
+127-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+128            <intent-filter>
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+129                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+129-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+129-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+130            </intent-filter>
+131            <intent-filter>
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+132                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+133            </intent-filter>
+134            <intent-filter>
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+135                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+136            </intent-filter>
+137            <intent-filter>
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+138                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/agentuser/.gradle/caches/transforms-4/fa0a2d8710d127872bb5e1ee8777fa3a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+139            </intent-filter>
+140        </receiver>
+141    </application>
+142
+143</manifest>

@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -79,7 +81,7 @@ fun WorkspaceScreen(onBack: () -> Unit) {
         // 顶栏
         Surface(color = MaterialTheme.colorScheme.surface) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(4.dp, 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(8.dp, 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
@@ -99,7 +101,7 @@ fun WorkspaceScreen(onBack: () -> Unit) {
         }
 
         // 根目录快捷切换
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             WorkspaceChip("App 私有目录", currentPath == privateRoot) { enter(privateRoot) }
             WorkspaceChip("下载", currentPath == downloadRoot) { enter(downloadRoot) }
         }
@@ -107,10 +109,14 @@ fun WorkspaceScreen(onBack: () -> Unit) {
         // 返回上级
         if (currentPath != "/" && currentPath != privateRoot && currentPath != downloadRoot) {
             Row(
-                Modifier.fillMaxWidth().clickable {
-                    val parent = File(currentPath).parentFile
-                    if (parent != null) enter(parent.absolutePath)
-                }.padding(10.dp, 8.dp)
+                Modifier.fillMaxWidth()
+                    .clickable {
+                        val parent = File(currentPath).parentFile
+                        if (parent != null) enter(parent.absolutePath)
+                    }
+                    .padding(horizontal = 8.dp)
+                    .heightIn(min = 48.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("⬆ 返回上级", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
             }
@@ -125,8 +131,8 @@ fun WorkspaceScreen(onBack: () -> Unit) {
                 val isDir = f.isDirectory
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
                     Row(
                         Modifier.clickable {
@@ -135,7 +141,9 @@ fun WorkspaceScreen(onBack: () -> Unit) {
                                 openFile = f
                                 fileContent = text
                             }
-                        }.padding(10.dp),
+                        }
+                            .padding(horizontal = 8.dp)
+                            .heightIn(min = 48.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -157,7 +165,7 @@ fun WorkspaceScreen(onBack: () -> Unit) {
                 }
             }
             if (entries.isEmpty()) {
-                item { Text("（空目录）", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp)) }
+                item { Text("（空目录）", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
             }
         }
     }
@@ -251,12 +259,18 @@ fun WorkspaceScreen(onBack: () -> Unit) {
 
 @Composable
 private fun WorkspaceChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(999.dp),
-        modifier = Modifier.clickable(onClick = onClick)
+    Box(
+        modifier = Modifier
+            .height(48.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+        Surface(
+            color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(999.dp)
+        ) {
+            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+        }
     }
 }
 

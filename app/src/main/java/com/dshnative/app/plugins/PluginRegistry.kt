@@ -104,6 +104,18 @@ class PluginRegistry(context: Context) {
             tools = listOf("android_shell_exec", "android_app_list", "android_system_info"),
             defaultEnabled = true
         ),
+        DshPlugin(
+            id = "permissions",
+            name = "权限管理",
+            description = "列出/检查手机全部权限（通知/相机/麦克风/联系人/日历/电话/短信/存储/悬浮窗/所有文件访问等），引导用户授权。",
+            category = PluginCategory.TOOL,
+            tools = listOf(
+                "android_permission_list",
+                "android_permission_open_settings",
+                "android_permission_enable_special"
+            ),
+            defaultEnabled = true
+        ),
 
         // ---------- 功能服务插件 ----------
         DshPlugin(

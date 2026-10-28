@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
@@ -266,6 +267,34 @@ class ToolRegistry(private val context: Context) {
                 })
                 put("required", JsonArray(listOf(JsonPrimitive("job_id"))))
             }
+        ),
+        toolDef(
+            "android_permission_list",
+            "列出手机全部权限及其授予状态（授予/未授予）。可传 group 过滤（系统/存储/相机与麦克风/联系人与日历/电话与短信/网络与位置）。用于检查 AI 是否有能力执行某类操作。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("group", buildJsonObject { put("type", "string"); put("description", "可选：按分组过滤，如 系统/存储/相机与麦克风/联系人与日历/电话与短信/网络与位置") })
+                })
+            }
+        ),
+        toolDef(
+            "android_permission_open_settings",
+            "打开本应用的系统权限设置页，方便用户手动授权任意权限（相机/麦克风/联系人/存储/通知等）。"
+        ),
+        toolDef(
+            "android_permission_enable_special",
+            "打开特殊权限设置页。参数：key，可选 all_files（所有文件访问）/overlay（悬浮窗）/write_settings（修改系统设置）/exact_alarm（闹钟）/usage_stats（使用情况访问）。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("key", buildJsonObject {
+                        put("type", "string")
+                        put("enum", JsonArray(listOf(JsonPrimitive("all_files"), JsonPrimitive("overlay"), JsonPrimitive("write_settings"), JsonPrimitive("exact_alarm"), JsonPrimitive("usage_stats"))))
+                    })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("key"))))
+            }
         )
     )
 
@@ -309,6 +338,9 @@ class ToolRegistry(private val context: Context) {
             "jobs_run" -> jobsRun(args)
             "jobs_list" -> jobsList()
             "jobs_result" -> jobsResult(args)
+            "android_permission_list" -> permissionList(args)
+            "android_permission_open_settings" -> permissionOpenSettings()
+            "android_permission_enable_special" -> permissionEnableSpecial(args)
             else -> """{"error":"unknown tool $name"}"""
         }
     }
@@ -586,6 +618,53 @@ class ToolRegistry(private val context: Context) {
             android.net.ConnectivityManager.TYPE_WIFI -> "wifi"
             android.net.ConnectivityManager.TYPE_MOBILE -> "mobile"
             else -> info.typeName ?: "unknown"
+        }
+    }
+
+    // ---------- 权限插件（permission tools：AI 可列出/引导授予各项权限） ----------
+
+    private fun permissionList(args: JsonObject): String {
+        val groupFilter = args["group"]?.jsonPrimitive?.contentOrNull
+        val pm = com.dshnative.app.permissions.PermissionManager
+        val items = pm.all.filter { groupFilter.isNullOrBlank() || it.group == groupFilter }
+        val arr = buildJsonArray {
+            items.forEach { item ->
+                add(buildJsonObject {
+                    put("name", item.name)
+                    put("group", item.group)
+                    put("granted", pm.isGranted(context, item))
+                    put("permission", item.permission ?: "special:${item.specialKey}")
+                })
+            }
+        }
+        val grantedCount = arr.count {
+            it.jsonObject["granted"]?.jsonPrimitive?.contentOrNull == "true"
+        }
+        return """{"count":${items.size},"granted_count":$grantedCount,"permissions":$arr}"""
+    }
+
+    private fun permissionOpenSettings(): String {
+        return try {
+            val intent = com.dshnative.app.permissions.PermissionManager.buildAppSettingsIntent(context)
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            """{"ok":true,"opened":"应用权限设置页"}"""
+        } catch (e: Exception) {
+            """{"error":"打开权限设置失败: ${e.message}"}"""
+        }
+    }
+
+    private fun permissionEnableSpecial(args: JsonObject): String {
+        val key = args["key"]?.jsonPrimitive?.contentOrNull
+            ?: return """{"error":"缺少 key（all_files/overlay/write_settings/exact_alarm/usage_stats）"}"""
+        return try {
+            val intent = com.dshnative.app.permissions.PermissionManager.buildSpecialSettingsIntent(context, key)
+                ?: return """{"error":"无效的特殊权限 key: $key"}"""
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            """{"ok":true,"opened":"特殊权限设置页:$key"}"""
+        } catch (e: Exception) {
+            """{"error":"打开特殊权限设置失败: ${e.message}"}"""
         }
     }
 }

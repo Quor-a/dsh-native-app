@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,7 +56,7 @@ fun PluginsScreen(onBack: () -> Unit) {
         // 顶栏
         Surface(color = MaterialTheme.colorScheme.surface) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
@@ -80,24 +82,25 @@ fun PluginsScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item { FilterChip("全部", filter == null) { filter = null } }
-            PluginCategory.entries.forEach { cat ->
-                item { FilterChip(cat.label, filter == cat.name) { filter = cat.name } }
+            item(key = "all") { FilterChip("全部", filter == null) { filter = null } }
+            items(PluginCategory.entries, key = { it.name }) { cat ->
+                FilterChip(cat.label, filter == cat.name) { filter = cat.name }
             }
         }
 
+        val visiblePlugins = plugins.filter { filter == null || it.category.name == filter }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 16.dp)
         ) {
-            items(plugins.filter { filter == null || it.category.name == filter }, key = { it.id }) { p ->
+            items(visiblePlugins, key = { it.id }) { p ->
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -147,32 +150,50 @@ fun PluginsScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            if (visiblePlugins.isEmpty()) {
+                item {
+                    Text(
+                        "当前分类下没有插件",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
+    Box(
         modifier = Modifier
-            .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                else MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(999.dp)
-            )
-            .border(
-                1.dp,
-                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                RoundedCornerShape(999.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(48.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        if (label == "可安装") {
-            Icon(Icons.Filled.InstallDesktop, null, Modifier.width(12.dp).height(12.dp), tint = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.width(4.dp))
+        Row(
+            modifier = Modifier
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    RoundedCornerShape(999.dp)
+                )
+                .border(
+                    1.dp,
+                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    RoundedCornerShape(999.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (label == "可安装") {
+                Icon(Icons.Filled.InstallDesktop, null, Modifier.width(12.dp).height(12.dp), tint = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
         }
-        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }

@@ -22,11 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dshnative.app.dshweb.DshWebServer
 import com.dshnative.app.ui.ChatScreen
 import com.dshnative.app.ui.theme.DshNativeTheme
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private val dshWebServer = DshWebServer()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +45,9 @@ class MainActivity : ComponentActivity() {
             android.os.Process.killProcess(android.os.Process.myPid())
         }
 
+        // 启动本地 DSH Web 协议层服务器（127.0.0.1:8756），供 WebView 加载 Web UI。
+        dshWebServer.start(applicationContext)
+
         setContent {
             DshNativeTheme {
                 val crash = remember { readCrashLog() }
@@ -55,6 +61,11 @@ class MainActivity : ComponentActivity() {
                 ChatScreen()
             }
         }
+    }
+
+    override fun onDestroy() {
+        dshWebServer.stopServer()
+        super.onDestroy()
     }
 
     private fun readCrashLog(): String? {
