@@ -110,6 +110,92 @@ class ToolRegistry(private val context: Context) {
         toolDef(
             "android_app_list",
             "列出已安装的应用（包名 + 应用名）。参数：optional（可选）filter（如 system/user/all）。"
+        ),
+        toolDef(
+            "android_file_list",
+            "列出目录内容。参数：path（可选，默认应用私有目录；也可用绝对路径如 /sdcard/Download）。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("path", buildJsonObject { put("type", "string"); put("description", "目录绝对路径，省略则用应用私有目录") })
+                    }
+                )
+            )
+        ),
+        toolDef(
+            "android_file_read",
+            "读取文件内容（UTF-8 文本，最多 20000 字符）。参数：path（文件绝对路径）。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("path", buildJsonObject { put("type", "string"); put("description", "文件绝对路径") })
+                    },
+                    "required" to JsonArray(listOf(JsonPrimitive("path")))
+                )
+            )
+        ),
+        toolDef(
+            "android_file_write",
+            "写入文本文件（UTF-8，覆盖写入）。参数：path（文件绝对路径），content（内容）。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("path", buildJsonObject { put("type", "string"); put("description", "文件绝对路径") })
+                        put("content", buildJsonObject { put("type", "string"); put("description", "要写入的内容") })
+                    },
+                    "required" to JsonArray(listOf(JsonPrimitive("path"), JsonPrimitive("content")))
+                )
+            )
+        ),
+        toolDef(
+            "android_clipboard_get",
+            "读取系统剪贴板的当前文本内容。"
+        ),
+        toolDef(
+            "android_clipboard_set",
+            "设置系统剪贴板文本。参数：text（要复制的文本）。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("text", buildJsonObject { put("type", "string"); put("description", "要复制到剪贴板的文本") })
+                    },
+                    "required" to JsonArray(listOf(JsonPrimitive("text")))
+                )
+            )
+        ),
+        toolDef(
+            "android_web_fetch",
+            "抓取指定 URL 的网页内容（返回纯文本，最多 8000 字符）。参数：url。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("url", buildJsonObject { put("type", "string"); put("description", "要抓取的网页 URL") })
+                    },
+                    "required" to JsonArray(listOf(JsonPrimitive("url")))
+                )
+            )
+        ),
+        toolDef(
+            "android_browser_open",
+            "在系统浏览器中打开 URL。参数：url。",
+            JsonObject(
+                mapOf(
+                    "type" to JsonPrimitive("object"),
+                    "properties" to buildJsonObject {
+                        put("url", buildJsonObject { put("type", "string"); put("description", "要打开的 URL") })
+                    },
+                    "required" to JsonArray(listOf(JsonPrimitive("url")))
+                )
+            )
+        ),
+        toolDef(
+            "android_system_info",
+            "获取设备信息：品牌型号、Android 版本、SDK、电池电量、网络类型等。"
         )
     )
 
@@ -137,6 +223,14 @@ class ToolRegistry(private val context: Context) {
             "android_ui_global" -> global(args)
             "android_shell_exec" -> shellExec(args)
             "android_app_list" -> appList(args)
+            "android_file_list" -> fileList(args)
+            "android_file_read" -> fileRead(args)
+            "android_file_write" -> fileWrite(args)
+            "android_clipboard_get" -> clipboardGet()
+            "android_clipboard_set" -> clipboardSet(args)
+            "android_web_fetch" -> webFetch(args)
+            "android_browser_open" -> browserOpen(args)
+            "android_system_info" -> systemInfo()
             else -> """{"error":"unknown tool $name"}"""
         }
     }
@@ -223,4 +317,117 @@ class ToolRegistry(private val context: Context) {
     private fun service(): DshAccessibilityService? = DshAccessibilityService.instance
 
     private fun errNoService() = """{"error":"无障碍服务未连接，请先在系统设置中开启 DshNative 无障碍服务"}"""
+
+    private fun fileList(args: JsonObject): String {
+        val path = args["path"]?.jsonPrimitive?.contentOrNull
+            ?: context.filesDir.absolutePath
+        return try {
+            val dir = java.io.File(path)
+            if (!dir.isDirectory) return """{"error":"不是目录: $path"}"""
+            val items = dir.listFiles()?.sortedBy { it.name }?.take(200)?.map {
+                """{"name":"${it.name}","type":${if (it.isDirectory) "\"dir\"" else "\"file\""},"size":${it.length()}}"""
+            } ?: emptyList()
+            """{"path":"$path","count":${items.size},"items":[${items.joinToString(",")}]}"""
+        } catch (e: Exception) {
+            """{"error":"读取目录失败: ${e.message}"}"""
+        }
+    }
+
+    private fun fileRead(args: JsonObject): String {
+        val path = args["path"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 path"}"""
+        return try {
+            val text = java.io.File(path).readText()
+            """{"path":"$path","content":${JsonPrimitive(text.take(20000))}}"""
+        } catch (e: Exception) {
+            """{"error":"读取文件失败: ${e.message}"}"""
+        }
+    }
+
+    private fun fileWrite(args: JsonObject): String {
+        val path = args["path"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 path"}"""
+        val content = args["content"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 content"}"""
+        return try {
+            val f = java.io.File(path)
+            f.parentFile?.mkdirs()
+            f.writeText(content)
+            """{"ok":true,"path":"$path","bytes":${content.toByteArray().size}}"""
+        } catch (e: Exception) {
+            """{"error":"写入文件失败: ${e.message}（可能无权限，可尝试 android_shell_exec 用 su 执行）"}"""
+        }
+    }
+
+    private fun clipboardGet(): String {
+        val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val text = cm.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString() ?: ""
+        return """{"clipboard":${JsonPrimitive(text.take(5000))}}"""
+    }
+
+    private fun clipboardSet(args: JsonObject): String {
+        val text = args["text"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 text"}"""
+        val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("dshnative", text))
+        return """{"ok":true,"clipboard_set":${JsonPrimitive(text.take(200))}}"""
+    }
+
+    private fun webFetch(args: JsonObject): String {
+        val url = args["url"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 url"}"""
+        return try {
+            val request = okhttp3.Request.Builder().url(url).header("User-Agent", "Mozilla/5.0 (Linux; Android)").build()
+            okhttp3.OkHttpClient.Builder()
+                .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+                .newCall(request)
+                .execute()
+                .use { resp ->
+                    if (!resp.isSuccessful) """{"error":"HTTP ${resp.code}"}"""
+                    else """{"url":"$url","content":${JsonPrimitive(resp.body?.string()?.take(8000) ?: "")}}"""
+                }
+        } catch (e: Exception) {
+            """{"error":"抓取失败: ${e.message}"}"""
+        }
+    }
+
+    private fun browserOpen(args: JsonObject): String {
+        val url = args["url"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 url"}"""
+        return try {
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            """{"ok":true,"opened":"$url"}"""
+        } catch (e: Exception) {
+            """{"error":"打开浏览器失败: ${e.message}"}"""
+        }
+    }
+
+    private fun systemInfo(): String {
+        val battery = IntentBattery()
+        val info = buildJsonObject {
+            put("brand", android.os.Build.BRAND)
+            put("model", android.os.Build.MODEL)
+            put("device", android.os.Build.DEVICE)
+            put("android_version", android.os.Build.VERSION.RELEASE)
+            put("sdk", android.os.Build.VERSION.SDK_INT)
+            put("battery_pct", battery)
+            put("network", networkType())
+        }
+        return """{"device":$info}"""
+    }
+
+    private fun IntentBattery(): Int {
+        val intent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = intent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        return if (level >= 0 && scale > 0) (level * 100 / scale) else -1
+    }
+
+    private fun networkType(): String {
+        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val info = cm.activeNetworkInfo ?: return "none"
+        return when (info.type) {
+            android.net.ConnectivityManager.TYPE_WIFI -> "wifi"
+            android.net.ConnectivityManager.TYPE_MOBILE -> "mobile"
+            else -> info.typeName ?: "unknown"
+        }
+    }
 }
