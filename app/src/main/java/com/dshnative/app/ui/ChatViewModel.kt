@@ -33,6 +33,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val _busy = mutableStateOf(false)
     val busy: State<Boolean> = _busy
 
+    private val _toolStatus = mutableStateOf("")
+    val toolStatus: State<String> = _toolStatus
+
     init {
         val loaded = store.loadAll()
         if (loaded.isEmpty()) {
@@ -91,6 +94,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         // 添加 assistant 占位（流式输出目标）
         updateConversation(ci, _conversations[ci].copy(messages = _conversations[ci].messages + ChatMessage("assistant", "")))
         _busy.value = true
+        _toolStatus.value = ""
         viewModelScope.launch {
             try {
                 if (config.apiKey.isEmpty()) {
@@ -109,6 +113,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         val last = msgs.lastOrNull() ?: return@run
                         msgs[msgs.size - 1] = last.copy(content = last.content + delta)
                         updateConversation(i, _conversations[i].copy(messages = msgs))
+                    },
+                    onToolStart = { name ->
+                        _toolStatus.value = toolStatusLabel(name)
                     }
                 )
             } catch (e: Exception) {
@@ -118,6 +125,26 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 persist()
             }
         }
+    }
+
+    private fun toolStatusLabel(name: String): String = when (name) {
+        "android_shell_exec" -> "执行了命令"
+        "android_ui_tree" -> "读取了屏幕"
+        "android_screenshot" -> "截取了屏幕"
+        "android_ui_click" -> "点击了屏幕"
+        "android_ui_input" -> "输入了文本"
+        "android_ui_swipe" -> "滑动了屏幕"
+        "android_ui_global" -> "执行了全局动作"
+        "android_app_list" -> "读取了应用列表"
+        "android_file_list" -> "浏览了文件"
+        "android_file_read" -> "读取了文件"
+        "android_file_write" -> "写入了文件"
+        "android_clipboard_get" -> "读取了剪贴板"
+        "android_clipboard_set" -> "写入了剪贴板"
+        "android_web_fetch" -> "抓取了网页"
+        "android_browser_open" -> "打开了浏览器"
+        "android_system_info" -> "读取了系统信息"
+        else -> "调用了 $name"
     }
 
     private fun appendAssistant(text: String) {

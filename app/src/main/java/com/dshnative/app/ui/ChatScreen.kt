@@ -90,6 +90,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSettings by remember { mutableStateOf(false) }
+    var showModelPicker by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
 
@@ -129,6 +130,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 DshComposer(
                     model = config.model,
                     busy = busy,
+                    onModelClick = { showModelPicker = true },
                     onSend = { viewModel.send(it) }
                 )
             }
@@ -137,6 +139,18 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
     if (showSettings) {
         SettingsDialog(config = config, onDismiss = { showSettings = false })
+    }
+
+    if (showModelPicker) {
+        ModelPickerDialog(
+            models = config.models,
+            current = config.model,
+            onSelect = {
+                config.model = it
+                showModelPicker = false
+            },
+            onDismiss = { showModelPicker = false }
+        )
     }
 }
 
@@ -193,6 +207,19 @@ fun DshMessageList(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
         }
         items(messages) { msg ->
             DshMessageBubble(msg)
+        }
+        val toolStatus = viewModel.toolStatus.value
+        if (toolStatus.isNotEmpty()) {
+            item {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                    Text(
+                        text = "⚙  $toolStatus",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -278,7 +305,7 @@ fun DshMessageBubble(msg: ChatMessage) {
 
 /** 底部输入卡（DSH composer）：模型标签 + 输入框 + 胶囊发送按钮 */
 @Composable
-fun DshComposer(model: String, busy: Boolean, onSend: (String) -> Unit) {
+fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: (String) -> Unit) {
     var input by remember { mutableStateOf("") }
     Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
         Surface(
@@ -292,6 +319,7 @@ fun DshComposer(model: String, busy: Boolean, onSend: (String) -> Unit) {
                     Box(
                         modifier = Modifier
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(999.dp))
+                            .clickable(onClick = onModelClick)
                             .padding(horizontal = 10.dp, vertical = 3.dp)
                     ) {
                         Text(
@@ -536,6 +564,50 @@ fun SettingsDialog(config: AppConfig, onDismiss: () -> Unit) {
                 onDismiss()
             }) { Text("保存") }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+/** 模型选择对话框（DSH 模型选择器） */
+@Composable
+fun ModelPickerDialog(
+    models: List<String>,
+    current: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择模型") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                models.forEach { m ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (m == current) MaterialTheme.colorScheme.outlineVariant
+                                else Color.Transparent,
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { onSelect(m) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = m,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (m == current) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                        Spacer(Modifier.weight(1f))
+                        if (m == current) {
+                            Text("✓", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
     )
 }

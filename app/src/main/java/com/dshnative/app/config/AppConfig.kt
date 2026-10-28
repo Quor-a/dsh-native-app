@@ -23,4 +23,14 @@ class AppConfig(context: Context) {
         set(value) {
             prefs.edit().putString("model", value).apply()
         }
+
+    /** 模型列表（逗号分隔存储） */
+    var models: List<String>
+        get() = (prefs.getString("models", "deepseek-chat,deepseek-reasoner") ?: "deepseek-chat,deepseek-reasoner")
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        set(value) {
+            prefs.edit().putString("models", value.joinToString(",")).apply()
+        }
 }
