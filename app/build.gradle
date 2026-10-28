@@ -13,8 +13,8 @@ android {
         applicationId "com.dshnative.app"
         minSdk 26
         targetSdk 34
-        versionCode 9
-        versionName "0.8.0"
+        versionCode 10
+        versionName "0.8.5"
     }
 
     buildTypes {
@@ -58,4 +58,7 @@ dependencies {
     // 本地 DSH 前端协议层：轻量 HTTP + WebSocket 服务器（纯 Java 单 jar）
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     implementation 'org.nanohttpd:nanohttpd-websocket:2.3.1'
+    // Shizuku 免 Root 权限（需安装 Shizuku 管理器并授权）
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
 }

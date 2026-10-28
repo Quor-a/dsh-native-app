@@ -127,13 +127,34 @@ fun PermissionsScreen(onBack: () -> Unit) {
                             item.permission?.let { requestLauncher.launch(it) }
                         },
                         onOpenSpecial = {
-                            val intent = PermissionManager.buildSpecialSettingsIntent(
-                                context,
-                                item.specialKey ?: ""
-                            )
-                            if (intent != null) {
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                context.startActivity(intent)
+                            when (item.specialKey) {
+                                PermissionManager.SPECIAL_SHIZUKU -> {
+                                    com.dshnative.app.shizuku.ShizukuManager.requestPermission(context)
+                                    refreshTick++
+                                }
+                                PermissionManager.SPECIAL_ROOT -> {
+                                    // Root 无法由应用主动授予，点击后重新检测设备 Root 状态
+                                    com.dshnative.app.root.RootManager.refresh()
+                                    refreshTick++
+                                }
+                                else -> {
+                                    val intent = PermissionManager.buildSpecialSettingsIntent(
+                                        context,
+                                        item.specialKey ?: ""
+                                    )
+                                    if (intent != null) {
+                                        try {
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            // 目标应用未安装（如 Shizuku 管理器），忽略并提示刷新状态
+                                            refreshTick++
+                                        }
+                                    } else {
+                                        // 无对应设置页（如 Root），点击后刷新状态
+                                        refreshTick++
+                                    }
+                                }
                             }
                         }
                     )

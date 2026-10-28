@@ -295,6 +295,40 @@ class ToolRegistry(private val context: Context) {
                 })
                 put("required", JsonArray(listOf(JsonPrimitive("key"))))
             }
+        ),
+        toolDef(
+            "android_root_status",
+            "检测设备是否已 Root（su 可用且能执行 id 返回 uid=0）。返回 available（布尔）与 su_path。"
+        ),
+        toolDef(
+            "android_root_exec",
+            "以 Root 权限执行 shell 命令（需设备已 root）。参数：command。返回 exit/stdout/stderr；root 不可用时返回错误。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("command", buildJsonObject { put("type", "string"); put("description", "要以 root 权限执行的 shell 命令") })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("command"))))
+            }
+        ),
+        toolDef(
+            "android_shizuku_status",
+            "检测 Shizuku 免 Root 权限状态。返回 available（Shizuku 服务是否运行）与 granted（本应用是否已授权）。"
+        ),
+        toolDef(
+            "android_shizuku_request",
+            "发起 Shizuku 授权请求（需在手机上确认）；若 Shizuku 不可用或请求失败，自动打开 Shizuku 管理器引导授权。"
+        ),
+        toolDef(
+            "android_shizuku_exec",
+            "通过 Shizuku 以 adb 权限执行 shell 命令（需已安装 Shizuku 并授权）。参数：command。返回 exit/stdout/stderr；未授权时返回提示。",
+            buildJsonObject {
+                put("type", "object")
+                put("properties", buildJsonObject {
+                    put("command", buildJsonObject { put("type", "string"); put("description", "要通过 Shizuku 执行的 shell 命令") })
+                })
+                put("required", JsonArray(listOf(JsonPrimitive("command"))))
+            }
         )
     )
 
@@ -341,6 +375,11 @@ class ToolRegistry(private val context: Context) {
             "android_permission_list" -> permissionList(args)
             "android_permission_open_settings" -> permissionOpenSettings()
             "android_permission_enable_special" -> permissionEnableSpecial(args)
+            "android_root_status" -> rootStatus()
+            "android_root_exec" -> rootExec(args)
+            "android_shizuku_status" -> shizukuStatus()
+            "android_shizuku_request" -> shizukuRequest()
+            "android_shizuku_exec" -> shizukuExec(args)
             else -> """{"error":"unknown tool $name"}"""
         }
     }
@@ -666,5 +705,61 @@ class ToolRegistry(private val context: Context) {
         } catch (e: Exception) {
             """{"error":"打开特殊权限设置失败: ${e.message}"}"""
         }
+    }
+
+    // ---------- Root 插件工具 ----------
+
+    private fun rootStatus(): String {
+        val pm = com.dshnative.app.root.RootManager
+        val available = pm.isRootAvailable()
+        val suPath = pm.findSuPath()
+        return """{"available":$available,"su_path":${JsonPrimitive(suPath ?: "")}}"""
+    }
+
+    private fun rootExec(args: JsonObject): String {
+        val cmd = args["command"]?.jsonPrimitive?.contentOrNull
+            ?: return """{"error":"缺少 command"}"""
+        val result = com.dshnative.app.root.RootManager.execAsRoot(cmd)
+        if (!result.ok && result.exit == -1 && result.stdout.isEmpty()) {
+            return """{"error":${JsonPrimitive(result.stderr)},"available":false}"""
+        }
+        return """{"ok":true,"exit":${result.exit},"stdout":${JsonPrimitive(result.stdout.take(8000))},"stderr":${JsonPrimitive(result.stderr.take(2000))}}"""
+    }
+
+    // ---------- Shizuku 插件工具 ----------
+
+    private fun shizukuStatus(): String {
+        val sm = com.dshnative.app.shizuku.ShizukuManager
+        val available = sm.isShizukuAvailable()
+        val granted = sm.isGranted()
+        return """{"available":$available,"granted":$granted}"""
+    }
+
+    private fun shizukuRequest(): String {
+        val available = com.dshnative.app.shizuku.ShizukuManager.isShizukuAvailable()
+        val granted = com.dshnative.app.shizuku.ShizukuManager.isGranted()
+        if (!available) {
+            com.dshnative.app.shizuku.ShizukuManager.openShizukuManager(context)
+            return """{"ok":false,"available":false,"granted":false,"message":"Shizuku 不可用，已打开 Shizuku 管理器（若未安装请先安装）"}"""
+        }
+        if (granted) {
+            return """{"ok":true,"available":true,"granted":true,"message":"Shizuku 已授权"}"""
+        }
+        val initiated = com.dshnative.app.shizuku.ShizukuManager.requestPermission(context)
+        return if (initiated) {
+            """{"ok":true,"available":true,"granted":false,"message":"已发起 Shizuku 授权请求，请在系统弹窗中确认"}"""
+        } else {
+            """{"ok":false,"available":true,"granted":false,"message":"授权请求发起失败，已打开 Shizuku 管理器引导授权"}"""
+        }
+    }
+
+    private fun shizukuExec(args: JsonObject): String {
+        val cmd = args["command"]?.jsonPrimitive?.contentOrNull
+            ?: return """{"error":"缺少 command"}"""
+        val result = com.dshnative.app.shizuku.ShizukuManager.execShell(cmd)
+        if (!result.ok) {
+            return """{"error":${JsonPrimitive(result.stderr)},"granted":${com.dshnative.app.shizuku.ShizukuManager.isGranted()}}"""
+        }
+        return """{"ok":true,"exit":${result.exit},"stdout":${JsonPrimitive(result.stdout.take(8000))},"stderr":${JsonPrimitive(result.stderr.take(2000))}}"""
     }
 }

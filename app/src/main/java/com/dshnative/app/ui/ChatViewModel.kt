@@ -18,9 +18,14 @@ import com.dshnative.app.model.ApiProviderType
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.model.QuroModelConfigRepository
+import com.dshnative.app.model.QuroModelListResult
+import com.dshnative.app.plugins.PluginRegistry
 import com.dshnative.app.tools.ToolRegistry
 import com.dshnative.app.termux.TermuxManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -30,6 +35,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val config = AppConfig(application)
     private val modelRepo = QuroModelConfigRepository(application)
     private val tools = ToolRegistry(application)
+    private val plugins = PluginRegistry(application)
 
     private val _conversations = mutableStateListOf<Conversation>()
     val conversations: List<Conversation> = _conversations
@@ -42,6 +48,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _toolStatus = mutableStateOf("")
     val toolStatus: State<String> = _toolStatus
+
+    // 当前模型（真实持久化配置的镜像，供聊天页顶部标签展示）
+    private val _model = MutableStateFlow(modelRepo.load().model)
+    val model: StateFlow<String> = _model.asStateFlow()
 
     init {
         // 后台解压内置 Termux（约 50MB，首次启动后台完成，终端工具立即可用）
@@ -97,6 +107,62 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         persist()
     }
 
+    /**
+     * 切换模型：写回 QuroModelConfigRepository 持久化配置，并同步 Compose 状态。
+     * 后续 [send] 每次仍从 repo 读取最新配置，因此切换后立即生效。
+     */
+    fun switchModel(model: String) {
+        val name = model.trim()
+        if (name.isEmpty()) return
+        val cfg = modelRepo.load()
+        if (cfg.model == name) return
+        modelRepo.save(cfg.copy(model = name))
+        _model.value = name
+    }
+
+    /** 从 repo 重新同步当前模型（从模型配置页返回后调用，避免展示陈旧值） */
+    fun syncModelFromRepo() {
+        _model.value = modelRepo.load().model
+    }
+
+    /**
+     * 可用模型列表：优先读取按当前 baseUrl 缓存的 /models 结果；
+     * 缓存为空/失效时用当前服务商默认模型 + 常见模型名兜底，并确保当前模型在列表内。
+     */
+    fun availableModels(): List<String> {
+        val cfg = modelRepo.load()
+        val cachedIds = when (val cached = modelRepo.loadModelListCache(cfg.baseUrl)) {
+            is QuroModelListResult.Success -> cached.models.map { it.id }.filter { it.isNotBlank() }
+            else -> emptyList()
+        }
+        val default = try {
+            ApiProviderConfigs.getDefaultModelName(ApiProviderType.valueOf(cfg.provider))
+        } catch (_: Exception) {
+            ""
+        }
+        val fallback = mutableListOf<String>().apply {
+            if (default.isNotBlank()) add(default)
+            addAll(COMMON_MODEL_FALLBACKS)
+        }.distinct()
+        val merged = (cachedIds + fallback).distinct()
+        return if (cfg.model.isNotBlank() && cfg.model !in merged) {
+            listOf(cfg.model) + merged
+        } else {
+            merged
+        }
+    }
+
+    companion object {
+        private val COMMON_MODEL_FALLBACKS = listOf(
+            "deepseek-chat",
+            "deepseek-reasoner",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "claude-3-5-sonnet-20241022",
+            "gemini-2.0-flash"
+        )
+    }
+
     fun send(text: String) {
         val content = text.trim()
         if (content.isEmpty() || _busy.value) return
@@ -127,7 +193,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     default.ifBlank { "deepseek-chat" }
                 }
                 val llm = LlmClient(cfg.baseUrl, cfg.apiKey, model)
-                val engine = AgentEngine(llm, tools)
+                val engine = AgentEngine(llm, tools, plugins)
                 val apiMessages = buildApiMessages()
                 engine.run(
                     history = apiMessages,
