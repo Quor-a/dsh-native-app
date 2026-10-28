@@ -58,6 +58,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,9 +69,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -81,6 +91,7 @@ import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.plugins.PluginsScreen
 import com.dshnative.app.termux.TerminalScreen
+import com.dshnative.app.workspace.WorkspaceManager
 import com.dshnative.app.workspace.WorkspaceScreen
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
@@ -96,11 +107,11 @@ private val ChatContentMaxWidth = 920.dp
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val context = LocalContext.current
-    val config = remember { AppConfig(context) }
     val markwon = remember { Markwon.builder(context).build() }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showModelPicker by remember { mutableStateOf(false) }
+    var showWorkspacePicker by remember { mutableStateOf(false) }
     var showPlugins by remember { mutableStateOf(false) }
     var showTerminal by remember { mutableStateOf(false) }
     var showModelConfig by remember { mutableStateOf(false) }
@@ -109,6 +120,16 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     var showPermissions by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
+    val model by viewModel.model.collectAsState()
+
+    // 工作区：应用私有目录 filesDir/workspace 下按名称建目录，选中项持久化
+    val workspaceManager = remember { WorkspaceManager(context) }
+    var currentWorkspaceName by remember { mutableStateOf(workspaceManager.currentWorkspace) }
+
+    // 从模型配置页返回后，重新同步真实持久化的模型名（配置页可能改了模型）
+    LaunchedEffect(showModelConfig) {
+        if (!showModelConfig) viewModel.syncModelFromRepo()
+    }
 
     if (showPlugins) {
         PluginsScreen(onBack = { showPlugins = false })
@@ -165,9 +186,11 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     toolStatus = viewModel.toolStatus.value
                 )
                 DshComposer(
-                    model = config.model,
+                    model = model,
+                    workspaceLabel = currentWorkspaceName?.let { "工作区: $it" } ?: "工作区内修改",
                     busy = busy,
                     onModelClick = { showModelPicker = true },
+                    onWorkspaceClick = { showWorkspacePicker = true },
                     onSend = { viewModel.send(it) }
                 )
             }
@@ -176,13 +199,34 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
     if (showModelPicker) {
         ModelPickerDialog(
-            models = config.models,
-            current = config.model,
+            models = remember { viewModel.availableModels() },
+            current = model,
             onSelect = {
-                config.model = it
+                viewModel.switchModel(it)
                 showModelPicker = false
             },
             onDismiss = { showModelPicker = false }
+        )
+    }
+
+    if (showWorkspacePicker) {
+        WorkspacePickerDialog(
+            workspaces = workspaceManager.listWorkspaces(),
+            current = currentWorkspaceName,
+            onCreate = { name ->
+                val exists = name in workspaceManager.listWorkspaces()
+                if (workspaceManager.createWorkspace(name) || exists) {
+                    workspaceManager.selectWorkspace(name)
+                    currentWorkspaceName = name
+                    showWorkspacePicker = false
+                }
+            },
+            onSelect = { name ->
+                workspaceManager.selectWorkspace(name)
+                currentWorkspaceName = name
+                showWorkspacePicker = false
+            },
+            onDismiss = { showWorkspacePicker = false }
         )
     }
     }
@@ -335,19 +379,37 @@ fun DshMessageBubble(msg: ChatMessage) {
     }
 }
 
-/** 底部输入卡（DSH composer）：模型标签 + 输入框 + 胶囊发送按钮 */
+/** 底部输入卡（DSH composer）：模型标签 + 工作区按钮 + 多行自动增长输入框 + 发送按钮 */
 @Composable
-fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: (String) -> Unit) {
+fun DshComposer(
+    model: String,
+    workspaceLabel: String,
+    busy: Boolean,
+    onModelClick: () -> Unit,
+    onWorkspaceClick: () -> Unit,
+    onSend: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var input by remember { mutableStateOf("") }
-    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+
+    fun submit() {
+        val text = input.trim()
+        if (text.isNotEmpty() && !busy) {
+            onSend(text)
+            input = ""
+        }
+    }
+
+    Box(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                // 模型标签行（对应 "工作区内修改 u2-flash"）
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                // 模型标签行（对应 DSH 的 "工作区内修改 <model>" 行）
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // 模型标签：点击打开模型选择器
                     Box(
                         modifier = Modifier
                             .height(48.dp)
@@ -363,19 +425,30 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                                 text = model,
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
                             )
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "工作区内修改",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    // 工作区按钮：点击打开工作区选择器
+                    Box(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .clickable(onClick = onWorkspaceClick),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = workspaceLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1
+                        )
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
+                    // 多行自动增长输入框：Enter 发送 / Shift+Enter 换行，支持系统粘贴
                     BasicTextField(
                         value = input,
                         onValueChange = { input = it },
@@ -384,8 +457,25 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                             fontSize = 15.sp
                         ),
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                        maxLines = 8,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { submit() }),
                         modifier = Modifier
                             .weight(1f)
+                            .heightIn(min = 48.dp, max = 160.dp)
+                            .onPreviewKeyEvent { event ->
+                                // 硬件键盘：Enter 发送（Shift+Enter 留给换行）
+                                if (event.type == KeyEventType.KeyDown &&
+                                    event.key == Key.Enter &&
+                                    !event.isShiftPressed
+                                ) {
+                                    submit()
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            .semantics { contentDescription = "消息输入框" }
                             .padding(vertical = 8.dp),
                         decorationBox = { inner ->
                             if (input.isEmpty()) {
@@ -398,7 +488,7 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                             inner()
                         }
                     )
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(8.dp))
                     if (busy) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(34.dp),
@@ -406,6 +496,7 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                             strokeWidth = 3.dp
                         )
                     } else {
+                        // 发送按钮：空输入时禁用（视觉 + 点击都禁用）
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -415,8 +506,7 @@ fun DshComposer(model: String, busy: Boolean, onModelClick: () -> Unit, onSend: 
                                     CircleShape
                                 )
                                 .clickable(enabled = input.isNotBlank()) {
-                                    onSend(input)
-                                    input = ""
+                                    submit()
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -720,35 +810,121 @@ fun ModelPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text("选择模型") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                models.forEach { m ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                if (m == current) MaterialTheme.colorScheme.outlineVariant
-                                else Color.Transparent,
-                                RoundedCornerShape(8.dp)
+            if (models.isEmpty()) {
+                Text(
+                    "暂无可用模型，请先在「设置」中拉取模型列表。",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                    items(models, key = { it }) { m ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    if (m == current) MaterialTheme.colorScheme.outlineVariant
+                                    else Color.Transparent,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable { onSelect(m) }
+                                .padding(horizontal = 16.dp)
+                                .heightIn(min = 48.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = m,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (m == current) FontWeight.SemiBold else FontWeight.Normal,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
                             )
-                            .clickable { onSelect(m) }
-                            .padding(horizontal = 16.dp)
-                            .heightIn(min = 48.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = m,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (m == current) FontWeight.SemiBold else FontWeight.Normal
-                        )
-                        Spacer(Modifier.weight(1f))
-                        if (m == current) {
-                            Text("✓", color = MaterialTheme.colorScheme.primary)
+                            if (m == current) {
+                                Text("✓", color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
             }
         },
         confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+/** 工作区选择对话框：列出已有工作区 + 新建工作区输入框 */
+@Composable
+fun WorkspacePickerDialog(
+    workspaces: List<String>,
+    current: String?,
+    onCreate: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var newName by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择工作区") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (workspaces.isEmpty()) {
+                    Text(
+                        "还没有工作区，输入名称新建一个开始使用。",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
+                        items(workspaces, key = { it }) { name ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (name == current) MaterialTheme.colorScheme.outlineVariant
+                                        else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { onSelect(name) }
+                                    .padding(horizontal = 16.dp)
+                                    .heightIn(min = 48.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.Folder,
+                                    contentDescription = "工作区文件夹",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = name,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (name == current) {
+                                    Text("✓", color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("新建工作区") },
+                    placeholder = { Text("输入工作区名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val name = newName.trim()
+                if (name.isNotEmpty()) onCreate(name)
+            }) { Text("新建") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
     )
 }

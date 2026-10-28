@@ -3,6 +3,7 @@ package com.dshnative.app.agent
 import com.dshnative.app.llm.ApiMessage
 import com.dshnative.app.llm.ApiToolCall
 import com.dshnative.app.llm.LlmClient
+import com.dshnative.app.plugins.PluginRegistry
 import com.dshnative.app.tools.ToolRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,11 +16,12 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class AgentEngine(
     private val llm: LlmClient,
-    private val tools: ToolRegistry
+    private val tools: ToolRegistry,
+    private val plugins: PluginRegistry? = null
 ) {
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
 
-    private val systemPrompt = """
+    private val baseSystemPrompt = """
         # 角色
         你是运行在 Android 手机上的原生 AI 助手（DshNative），直接操控手机，不是网页应用。
 
@@ -47,6 +49,19 @@ class AgentEngine(
     """.trimIndent()
 
     /**
+     * 动态系统提示词 = 基础骨架 + 所有启用插件注入的能力片段。
+     * 插件启用/停用会实时反映到模型看到的系统提示词。
+     */
+    private fun buildSystemPrompt(): String {
+        val pluginPrompts = plugins?.enabledPrompts()?.trim() ?: ""
+        return if (pluginPrompts.isNotEmpty()) {
+            "$baseSystemPrompt\n\n# 已启用的插件能力\n$pluginPrompts"
+        } else {
+            baseSystemPrompt
+        }
+    }
+
+    /**
      * 运行 Agent。
      * @param history 历史消息（含本次用户消息）
      * @param onDelta 流式输出最终回复增量
@@ -58,7 +73,8 @@ class AgentEngine(
         onDelta: (String) -> Unit = {},
         onToolStart: (String) -> Unit = {}
     ): String = withContext(Dispatchers.IO) {
-        val messages = history.toMutableList()
+        val messages = mutableListOf(ApiMessage("system", buildSystemPrompt()))
+        messages.addAll(history)
         var finalContent = ""
         // 最多 8 轮工具循环，防止死循环
         for (round in 1..8) {

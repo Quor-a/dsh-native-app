@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dshnative.app.dshweb.DshWebServer
+import com.dshnative.app.plugins.PluginRegistry
 import com.dshnative.app.ui.ChatScreen
 import com.dshnative.app.ui.theme.DshNativeTheme
 import java.io.File
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // 启动本地 DSH Web 协议层服务器（127.0.0.1:8756），供 WebView 加载 Web UI。
+        DshWebServer.pluginRegistry = PluginRegistry(applicationContext)
         dshWebServer.start(applicationContext)
 
         setContent {

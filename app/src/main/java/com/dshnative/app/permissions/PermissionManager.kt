@@ -35,6 +35,8 @@ object PermissionManager {
     const val SPECIAL_WRITE_SETTINGS = "write_settings"
     const val SPECIAL_EXACT_ALARM = "exact_alarm"
     const val SPECIAL_USAGE_STATS = "usage_stats"
+    const val SPECIAL_ROOT = "root"
+    const val SPECIAL_SHIZUKU = "shizuku"
 
     /** 全部权限清单（AI 工具与权限页共用） */
     val all: List<PermissionItem> = listOf(
@@ -44,6 +46,10 @@ object PermissionManager {
         PermissionItem(null, SPECIAL_WRITE_SETTINGS, "修改系统设置", "调整系统级设置（如亮度、飞行模式）", "系统"),
         PermissionItem(null, SPECIAL_EXACT_ALARM, "闹钟与提醒", "设定精确闹钟，不被打扰", "系统"),
         PermissionItem(null, SPECIAL_USAGE_STATS, "使用情况访问", "读取应用使用统计（App 使用记录）", "系统"),
+
+        // ---- Root / Shizuku（外部能力，非系统运行时权限）----
+        PermissionItem(null, SPECIAL_ROOT, "Root 权限", "以 root 权限执行命令（需设备已 root）", "Root / Shizuku"),
+        PermissionItem(null, SPECIAL_SHIZUKU, "Shizuku 免 Root", "通过 Shizuku 获得 adb 级权限（需安装 Shizuku 并授权）", "Root / Shizuku"),
 
         // ---- 存储 ----
         PermissionItem(null, SPECIAL_ALL_FILES, "所有文件访问", "管理外部存储的全部文件", "存储"),
@@ -90,6 +96,8 @@ object PermissionManager {
                     } else true
                 }
                 SPECIAL_USAGE_STATS -> hasUsageStatsPermission(context)
+                SPECIAL_ROOT -> com.dshnative.app.root.RootManager.isRootAvailable()
+                SPECIAL_SHIZUKU -> com.dshnative.app.shizuku.ShizukuManager.isGranted()
                 else -> false
             }
         }
@@ -115,6 +123,10 @@ object PermissionManager {
             Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))
         } else null
         SPECIAL_USAGE_STATS -> Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        SPECIAL_SHIZUKU -> Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:moe.shizuku.manager")
+        )
         else -> null
     }
 

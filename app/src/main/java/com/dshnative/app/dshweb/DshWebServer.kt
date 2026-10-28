@@ -2,6 +2,7 @@ package com.dshnative.app.dshweb
 
 import android.content.Context
 import android.util.Log
+import com.dshnative.app.plugins.PluginRegistry
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoWSD
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +50,10 @@ class DshWebServer : NanoWSD(HOST, PORT) {
         private const val COOKIE_PREFIX = "dsh-auth-"
         private const val HOME_PATH = "/data/data/com.dshnative.app/files"
         private const val ASSET_ROOT = "dsh"
+
+        /** 由 MainActivity 注入的插件注册表（供 Web UI 插件管理 API 返回真实数据） */
+        @Volatile
+        var pluginRegistry: PluginRegistry? = null
 
         @OptIn(ExperimentalSerializationApi::class)
         private val rpcJson = Json {
@@ -157,10 +162,10 @@ class DshWebServer : NanoWSD(HOST, PORT) {
             method == NanoHTTPD.Method.GET && uri == "/" -> serveIndex(session)
             method == NanoHTTPD.Method.GET && uri.startsWith("/plugins/") -> serveCombo(session, uri)
             method == NanoHTTPD.Method.POST && uri.startsWith("/api/") -> serveApi(session, uri)
-            method == NanoHTTPD.Method.GET && uri.startsWith("/assets/") -> serveAsset(uri.removePrefix("/"))
+            method == NanoHTTPD.Method.GET && uri.startsWith("/assets/") -> serveAsset("$ASSET_ROOT/${uri.removePrefix("/")}")
             method == NanoHTTPD.Method.GET && (uri == "/manifest.webmanifest" || uri == "/favicon.svg" || uri == "/favicon-dark.svg") ->
-                serveAsset(uri.removePrefix("/"))
-            method == NanoHTTPD.Method.GET -> serveAsset(uri.removePrefix("/"))
+                serveAsset("$ASSET_ROOT/${uri.removePrefix("/")}")
+            method == NanoHTTPD.Method.GET -> serveAsset("$ASSET_ROOT/${uri.removePrefix("/")}")
             else -> newFixedLengthResponse(
                 NanoHTTPD.Response.Status.NOT_FOUND,
                 NanoHTTPD.MIME_PLAINTEXT,
@@ -398,8 +403,36 @@ class DshWebServer : NanoWSD(HOST, PORT) {
             })
             "goals/list" -> okResult(buildJsonObject { put("items", buildJsonArray { }) })
             "skills/list" -> okResult(buildJsonObject { put("items", buildJsonArray { }) })
-            "pluginInventory/list" -> okResult(buildJsonObject { put("items", buildJsonArray { }) })
-            "pluginManager/listPlugins" -> okResult(buildJsonArray { })
+            "pluginInventory/list" -> okResult(buildJsonObject {
+                val items = buildJsonArray {
+                    DshWebServer.pluginRegistry?.marketIndex()?.forEach { p ->
+                        add(buildJsonObject {
+                            put("id", p.bundleName.ifBlank { p.officialId })
+                            put("name", p.name)
+                            put("description", p.description)
+                            put("version", p.version)
+                            put("enabled", p.enabled)
+                            put("builtin", p.builtin)
+                            put("optional", p.optional)
+                            put("category", p.category.name)
+                            put("tools", buildJsonArray { p.tools.forEach { add(it) } })
+                        })
+                    }
+                }
+                put("items", items)
+            })
+            "pluginManager/listPlugins" -> okResult(buildJsonArray {
+                DshWebServer.pluginRegistry?.marketIndex()?.forEach { p ->
+                    add(buildJsonObject {
+                        put("id", p.id)
+                        put("name", p.name)
+                        put("description", p.description)
+                        put("version", p.version)
+                        put("enabled", p.enabled)
+                        put("builtin", p.builtin)
+                    })
+                }
+            })
             "pluginManager/listBundles" -> okResult(buildJsonArray { })
             "pluginMarket/listIndexes" -> okResult(buildJsonArray { })
             "settings/describe" -> okResult(buildJsonObject { })
