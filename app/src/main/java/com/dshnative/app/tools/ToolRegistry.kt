@@ -283,12 +283,8 @@ class ToolRegistry(private val context: Context) {
 
     private fun shellExec(args: JsonObject): String {
         val cmd = args["command"]?.jsonPrimitive?.contentOrNull ?: return """{"error":"缺少 command"}"""
-        // 优先 Shizuku（无需 root，权限更规范）
-        if (com.dshnative.app.service.ShizukuShell.isAvailable()) {
-            return com.dshnative.app.service.ShizukuShell.exec(cmd)
-        }
         return try {
-            // 其次 su（root），最后系统 sh（受限）
+            // 优先 su（root），无 root 时用系统 sh（受限）
             val proc = try {
                 Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
             } catch (_: Exception) {
@@ -299,7 +295,7 @@ class ToolRegistry(private val context: Context) {
             val err = proc.errorStream.bufferedReader().readText()
             """{"exit":${proc.exitValue()},"stdout":${JsonPrimitive(out.take(4000))},"stderr":${JsonPrimitive(err.take(1000))}}"""
         } catch (e: Exception) {
-            """{"error":"shell 执行失败: ${e.message}（可安装 Shizuku 获得免 root 执行权限）"}"""
+            """{"error":"shell 执行失败: ${e.message}"}"""
         }
     }
 
