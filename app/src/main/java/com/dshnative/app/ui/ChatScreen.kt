@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Send
@@ -75,6 +76,7 @@ import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
 import com.dshnative.app.plugins.PluginsScreen
 import com.dshnative.app.termux.TerminalScreen
+import com.dshnative.app.workspace.WorkspaceScreen
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
 
@@ -97,6 +99,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     var showPlugins by remember { mutableStateOf(false) }
     var showTerminal by remember { mutableStateOf(false) }
     var showModelConfig by remember { mutableStateOf(false) }
+    var showWorkspace by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
 
@@ -106,6 +109,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
         TerminalScreen(onBack = { showTerminal = false })
     } else if (showModelConfig) {
         ModelConfigScreen(onBack = { showModelConfig = false })
+    } else if (showWorkspace) {
+        WorkspaceScreen(onBack = { showWorkspace = false })
     } else {
         CompositionLocalProvider(LocalMarkwon provides markwon) {
         ModalNavigationDrawer(
@@ -125,7 +130,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     onDelete = { viewModel.deleteConversation(it) },
                     onRename = { id, title -> viewModel.renameConversation(id, title) },
                     onPlugins = { showPlugins = true },
-                    onTerminal = { showTerminal = true }
+                    onTerminal = { showTerminal = true },
+                    onWorkspace = { showWorkspace = true }
                 )
             }
         ) {
@@ -418,7 +424,8 @@ fun DshSidebar(
     onDelete: (String) -> Unit,
     onRename: (String, String) -> Unit,
     onPlugins: () -> Unit,
-    onTerminal: () -> Unit
+    onTerminal: () -> Unit,
+    onWorkspace: () -> Unit
 ) {
     var renameTarget by remember { mutableStateOf<String?>(null) }
     Column(
@@ -440,7 +447,7 @@ fun DshSidebar(
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "DeepSeek Harness",
+                text = "DshNative",
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
@@ -505,6 +512,23 @@ fun DshSidebar(
             Text("终端", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
             Spacer(Modifier.weight(1f))
             Text("Termux", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+
+        // 工作区入口
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                .clickable { onWorkspace() }
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("工作区", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+            Spacer(Modifier.weight(1f))
+            Text("文件", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
         Spacer(Modifier.height(10.dp))
 
