@@ -37,6 +37,7 @@ fun WebUiScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val webView = remember {
         WebView(context).apply {
+            WebView.setWebContentsDebuggingEnabled(true)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.allowFileAccess = false

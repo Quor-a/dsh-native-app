@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -301,7 +302,14 @@ class DshWebServer : NanoWSD(HOST, PORT) {
         }
 
         val payload = request["payload"]?.jsonObject ?: JsonObject(emptyMap())
-        val args = payload["args"]?.jsonObject ?: JsonObject(emptyMap())
+        var args = payload["args"]?.jsonObject ?: JsonObject(emptyMap())
+        if (args.isEmpty()) {
+            // 兼容前端 RPC 把参数直接放在 payload.parameters / payload.params（数组或对象）
+            val params = payload["parameters"] ?: payload["params"]
+            if (params != null) {
+                args = JsonObject(mapOf("parameters" to params))
+            }
+        }
         val result = routeRpc(endpoint, args)
         return rpcResponse(RpcResponse(rpcId = rpcId, result = result))
     }
@@ -510,9 +518,7 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                 }
             })
             "pluginManager/installBundle" -> {
-                val request = args["request"]?.jsonObject
-                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
-                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
+                val bundle = bundleIdFromArgs(args)
                     ?: return@routeRpc errorResult("gateway/arguments-invalid", "missing bundle")
                 val registry = DshWebServer.pluginRegistry
                     ?: return@routeRpc errorResult("gateway/not-ready", "plugin registry not ready")
@@ -520,19 +526,15 @@ class DshWebServer : NanoWSD(HOST, PORT) {
                 okResult(buildJsonObject { put("installed", true) })
             }
             "pluginManager/setBundleEnabled" -> {
-                val request = args["request"]?.jsonObject
-                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
-                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
-                val enabled = request?.get("enabled")?.jsonPrimitive?.contentOrNull == "true"
+                val bundle = bundleIdFromArgs(args)
+                val enabled = enabledFromArgs(args) ?: true
                 if (bundle != null) {
                     DshWebServer.pluginRegistry?.setBundleEnabled(bundle, enabled)
                 }
                 okResult(null)
             }
             "pluginManager/removeBundle" -> {
-                val request = args["request"]?.jsonObject
-                val bundle = request?.get("bundle")?.jsonPrimitive?.contentOrNull
-                    ?: request?.get("bundleName")?.jsonPrimitive?.contentOrNull
+                val bundle = bundleIdFromArgs(args)
                 if (bundle != null) {
                     DshWebServer.pluginRegistry?.removeBundle(bundle)
                 }
@@ -616,6 +618,46 @@ class DshWebServer : NanoWSD(HOST, PORT) {
         }
     }
 
+    /** 从前端 RPC 参数中提取插件 bundle 标识（兼容 request/spec/parameters 数组等多种形式）。 */
+    private fun bundleIdFromArgs(args: JsonObject): String? {
+        val candidates = mutableListOf<JsonObject?>()
+        candidates.add(args["request"]?.jsonObject)
+        candidates.add(args["spec"]?.jsonObject)
+        val params = args["parameters"]
+        if (params is JsonArray) {
+            params.forEach { el -> if (el is JsonObject) candidates.add(el) }
+        } else if (params is JsonObject) {
+            candidates.add(params)
+        }
+        for (obj in candidates) {
+            if (obj == null) continue
+            for (key in listOf("bundle", "bundleName", "id", "name", "plugin")) {
+                val v = obj[key]?.jsonPrimitive?.contentOrNull
+                if (!v.isNullOrBlank()) return v
+            }
+        }
+        return null
+    }
+
+    /** 从前端 RPC 参数中提取 enabled 布尔值（兼容多种形式）。 */
+    private fun enabledFromArgs(args: JsonObject): Boolean? {
+        val candidates = mutableListOf<JsonObject?>()
+        candidates.add(args["request"]?.jsonObject)
+        candidates.add(args["spec"]?.jsonObject)
+        val params = args["parameters"]
+        if (params is JsonArray) {
+            params.forEach { el -> if (el is JsonObject) candidates.add(el) }
+        } else if (params is JsonObject) {
+            candidates.add(params)
+        }
+        for (obj in candidates) {
+            if (obj == null) continue
+            val s = obj["enabled"]?.jsonPrimitive?.contentOrNull
+            if (s != null) return s.equals("true", ignoreCase = true) || s == "1"
+        }
+        return null
+    }
+
     private fun handlePrompt(args: JsonObject): RpcResult {
         val request = args["request"]?.jsonObject
             ?: return errorResult("gateway/arguments-invalid", "missing request")
@@ -683,6 +725,7 @@ class DshWebServer : NanoWSD(HOST, PORT) {
             } catch (e: Exception) {
                 "错误：${e.message}"
             }
+            Log.i(TAG, "LLM reply [$sessionId]: ${reply.take(300)}")
 
             val attemptId = UUID.randomUUID().toString()
             broadcastFollow(sessionId, buildJsonObject {
