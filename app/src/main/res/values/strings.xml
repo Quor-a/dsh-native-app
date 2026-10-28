@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DshNative</string>
+    <string name="accessibility_label">DshNative 无障碍服务</string>
+    <string name="accessibility_description">用于 UI 树分析、点击、滑动、输入和截图，供 AI 助手操控手机</string>
+</resources>

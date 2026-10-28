@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.dshnative.app-debug-43:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.dshnative.app-main-45:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/agentuser/.gradle/daemon/8.7/com.dshnative.app-debug-43:/xml_accessibility_service_config.xml.flat",
+        "source": "/home/agentuser/.gradle/daemon/8.7/com.dshnative.app-main-45:/xml/accessibility_service_config.xml"
+    },
+    {
+        "merged": "com.dshnative.app-debug-43:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.dshnative.app-main-45:/drawable/ic_launcher_foreground.xml"
+    }
+]

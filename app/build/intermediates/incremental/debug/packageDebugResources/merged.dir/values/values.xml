@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0D1117</color>
+    <string name="accessibility_description">用于 UI 树分析、点击、滑动、输入和截图，供 AI 助手操控手机</string>
+    <string name="accessibility_label">DshNative 无障碍服务</string>
+    <string name="app_name">DshNative</string>
+    <style name="Theme.DshNative" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#0D1117</item>
+        <item name="android:navigationBarColor">#0D1117</item>
+        <item name="android:windowBackground">#0D1117</item>
+    </style>
+</resources>
