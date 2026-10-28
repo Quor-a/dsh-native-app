@@ -34,8 +34,9 @@ android {
         compose true
     }
     aaptOptions {
-        // Termux bootstrap 是 gzip 压缩的 tar（.gz），不要二次压缩
-        noCompress += "gz"
+        // Termux bootstrap 是 gzip 压缩的 tar，以 .gzdata 扩展名存放（
+        // AGP 会自动解压 .gz 扩展名，因此不能用 .gz），打包时不要二次压缩。
+        noCompress += "gzdata"
     }
 }
 

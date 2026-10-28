@@ -9,12 +9,14 @@ import java.util.zip.GZIPInputStream
 
 /**
  * 内置 Termux 终端环境管理。
- * bootstrap 打包在 assets/termux-bootstrap.tar.gz（gzip 压缩的 tar，data/data/com.termux/files/usr 结构），
+ * bootstrap 打包在 assets/termux-bootstrap.tar.gzdata（gzip 压缩的 tar，data/data/com.termux/files/usr 结构），
  * 首次运行解压到 filesDir，通过 proot 模拟 root 运行 bash，无需 root/Shizuku。
+ * 注意：AGP 的资产合并器会把扩展名为 .gz 的文件自动解压成 .tar 再打包进 APK，
+ * 因此这里用 .gzdata 扩展名存放 gzip 数据，避免被打包工具解压。
  */
 object TermuxManager {
 
-    private const val ASSET = "termux-bootstrap.tar.gz"
+    private const val ASSET = "termux-bootstrap.tar.gzdata"
     /** 相对 filesDir 的 Termux 用户态根 */
     const val REL_PREFIX = "data/data/com.termux/files/usr"
 
@@ -71,13 +73,14 @@ object TermuxManager {
             } else {
                 val tmpTar = File(filesDir, "termux-bootstrap-tmp")
                 try {
-                    // aapt 打包 assets 时会把 .gz 自动解压成 .tar 放进 APK，
-                    // 因此这里两个名字都要尝试（先 .tar，后 .gz）。
+                    // 打包工具不会解压 .gzdata，因此首选 ASSET；同时兼容历史 APK 里的
+                    // .tar（AGP 自动解压产物）和 .tar.gz 名字。
                     val assetName = try {
                         val names = context.assets.list("").orEmpty()
                         when {
-                            names.contains("termux-bootstrap.tar") -> "termux-bootstrap.tar"
                             names.contains(ASSET) -> ASSET
+                            names.contains("termux-bootstrap.tar.gz") -> "termux-bootstrap.tar.gz"
+                            names.contains("termux-bootstrap.tar") -> "termux-bootstrap.tar"
                             else -> null
                         }
                     } catch (_: Exception) {
