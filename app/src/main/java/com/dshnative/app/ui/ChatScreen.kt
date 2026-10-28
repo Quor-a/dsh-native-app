@@ -93,10 +93,10 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val markwon = remember { Markwon.builder(context).build() }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var showSettings by remember { mutableStateOf(false) }
     var showModelPicker by remember { mutableStateOf(false) }
     var showPlugins by remember { mutableStateOf(false) }
     var showTerminal by remember { mutableStateOf(false) }
+    var showModelConfig by remember { mutableStateOf(false) }
     val busy = viewModel.busy.value
     val current = viewModel.currentConversation
 
@@ -104,6 +104,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
         PluginsScreen(onBack = { showPlugins = false })
     } else if (showTerminal) {
         TerminalScreen(onBack = { showTerminal = false })
+    } else if (showModelConfig) {
+        ModelConfigScreen(onBack = { showModelConfig = false })
     } else {
         CompositionLocalProvider(LocalMarkwon provides markwon) {
         ModalNavigationDrawer(
@@ -137,7 +139,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     title = current?.title ?: "DeepSeek Harness",
                     onMenu = { scope.launch { drawerState.open() } },
                     onNew = { viewModel.newConversation() },
-                    onSettings = { showSettings = true }
+                    onSettings = { showModelConfig = true }
                 )
                 DshMessageList(viewModel = viewModel)
                 DshComposer(
@@ -148,10 +150,6 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 )
             }
         }
-    }
-
-    if (showSettings) {
-        SettingsDialog(config = config, onDismiss = { showSettings = false })
     }
 
     if (showModelPicker) {

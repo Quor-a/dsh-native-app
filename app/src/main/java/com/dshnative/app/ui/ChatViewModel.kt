@@ -15,6 +15,7 @@ import com.dshnative.app.llm.ApiMessage
 import com.dshnative.app.llm.LlmClient
 import com.dshnative.app.model.ChatMessage
 import com.dshnative.app.model.Conversation
+import com.dshnative.app.model.QuroModelConfigRepository
 import com.dshnative.app.tools.ToolRegistry
 import com.dshnative.app.termux.TermuxManager
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val store = ConversationStore(application)
     private val config = AppConfig(application)
+    private val modelRepo = QuroModelConfigRepository(application)
     private val tools = ToolRegistry(application)
 
     private val _conversations = mutableStateListOf<Conversation>()
@@ -108,11 +110,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _toolStatus.value = ""
         viewModelScope.launch {
             try {
-                if (config.apiKey.isEmpty()) {
-                    appendAssistant("尚未配置 API Key，请在右上角设置中填写。")
+                val cfg = modelRepo.load()  // 每次发送前加载最新模型配置
+                if (cfg.apiKey.isEmpty()) {
+                    appendAssistant("尚未配置 API Key，请在模型配置中填写。")
                     return@launch
                 }
-                val llm = LlmClient(config.baseUrl, config.apiKey, config.model)
+                val llm = LlmClient(cfg.baseUrl, cfg.apiKey, cfg.model)
                 val engine = AgentEngine(llm, tools)
                 val apiMessages = buildApiMessages()
                 engine.run(
